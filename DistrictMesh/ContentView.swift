@@ -1,25 +1,30 @@
 import SwiftUI
-import Playgrounds
 
-@main struct MyApp: App {
+@main
+struct MyApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
     }
 }
 
-struct ContentView: View {
+/// Owns the single mesh instance and gates between the onboarding journey and
+/// the main app based on whether the user has completed setup.
+struct RootView: View {
+    @State private var mesh = MeshConnectivityManager()
+    @AppStorage("district.onboarded") private var onboarded = false
+
     var body: some View {
-        Text("Hello, world!")
-            .padding()
+        Group {
+            if onboarded {
+                MeshTestView(mesh: mesh)
+            } else {
+                OnboardingView(mesh: mesh) { onboarded = true }
+            }
+        }
+        .tint(DistrictTheme.accent)
+        .preferredColorScheme(.dark)
+        .animation(.easeInOut, value: onboarded)
     }
-}
-
-#Preview {
-    ContentView()
-}
-
-#Playground {
-    _ = 1 + 2
 }
