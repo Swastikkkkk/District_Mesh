@@ -15,6 +15,8 @@ struct MeshRelayPacket: Codable, Identifiable, Sendable {
         case message
         case location
         case lfg // "looking for game" matchmaking presence; `text` = activity ("" = stopped)
+        case gameInvite // directed team-up invite; `recipient` = target, `text` = activity
+        case gameAccept // directed acceptance of an invite; `recipient` = original inviter, `text` = activity
     }
 
     /// Stable identifier for the packet, assigned by the original sender.
@@ -49,6 +51,12 @@ struct MeshRelayPacket: Codable, Identifiable, Sendable {
     /// Optional so packets from older senders decode as non-emergency.
     var isEmergency: Bool?
 
+    /// Display name of the intended recipient for directed packets
+    /// (`gameInvite` / `gameAccept`). `nil` for broadcast packets. Directed
+    /// packets are still relayed across the mesh so they reach a recipient that
+    /// isn't a direct neighbour; only the matching recipient acts on them.
+    var recipient: String?
+
     /// The starting time-to-live (max hop count) for freshly created packets.
     static let defaultTTL = 10
 
@@ -60,6 +68,7 @@ struct MeshRelayPacket: Codable, Identifiable, Sendable {
         latitude: Double? = nil,
         longitude: Double? = nil,
         isEmergency: Bool? = nil,
+        recipient: String? = nil,
         id: UUID = UUID(),
         timestamp: Date = Date()
     ) {
@@ -72,6 +81,7 @@ struct MeshRelayPacket: Codable, Identifiable, Sendable {
         self.latitude = latitude
         self.longitude = longitude
         self.isEmergency = isEmergency
+        self.recipient = recipient
     }
 
     /// Encodes the packet for transmission over an `MCSession`.

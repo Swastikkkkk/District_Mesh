@@ -37,6 +37,14 @@ struct LFGPlayer: Identifiable, Hashable {
     let date: Date
 }
 
+/// A team-up invite another solo player has sent us that we can accept.
+struct GameInvite: Identifiable, Hashable {
+    var id: String { from } // at most one pending invite per sender
+    let from: String
+    let activity: String
+    let date: Date
+}
+
 // MARK: - Mesh manager
 
 /// Drives peer discovery, connection, and multi-hop packet relay over
@@ -81,6 +89,15 @@ final class MeshConnectivityManager: NSObject {
     /// The activity we're currently looking to play, or nil if not searching.
     private(set) var myLFGActivity: String?
 
+    /// Team-up invites addressed to us that we can accept, keyed by sender name.
+    private(set) var incomingInvites: [String: GameInvite] = [:]
+
+    /// Players we've sent an invite to and are awaiting a response from.
+    private(set) var sentInvites: Set<String> = []
+
+    /// Players we've teamed up with (we accepted them, or they accepted us).
+    private(set) var teammates: Set<String> = []
+
     /// Device compass heading in degrees (0 = north), for the buddy compass.
     private(set) var deviceHeading: Double = 0
 
@@ -95,6 +112,14 @@ final class MeshConnectivityManager: NSObject {
 
     /// Drives the Dynamic Island / lock-screen Live Activity while connected.
     @ObservationIgnored private let liveActivity = LiveActivityController()
+
+    /// Whether the demo Live Activity is showing (for previewing the Dynamic
+    /// Island on a single device, without a second buddy connected).
+    private(set) var isDemoActivityRunning = false
+
+    /// Set by a Siri/Shortcuts "find my buddy" request. The main view observes
+    /// this, presents the buddy map, then resets it back to false.
+    var wantsBuddyMap = false
 
     /// Rolling on-screen diagnostic log (newest last) so connection issues are
     /// visible on-device without needing the Xcode console.
@@ -215,6 +240,56 @@ final class MeshConnectivityManager: NSObject {
         toastTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2.5))
             self?.toast = nil
+        }
+    }
+
+    /// Acts on any pending Siri/Shortcuts request, if present. Call when the app
+    /// becomes active so requests that arrived while backgrounded take effect.
+    func consumePendingIntents() {
+        // "Find <sport> players": go live and start matchmaking for that sport.
+        if let activity = PendingMatchmake.take() {
+            if !isHosting { startHosting() }
+            if !isBrowsing { startBrowsing() }
+            startLookingForGame(activity)
+        }
+        // "Find my buddy": go live, auto-share our location, and open the map.
+        if PendingRoute.takeOpenMap() {
+            if !isHosting { startHosting() }
+            if !isBrowsing { startBrowsing() }
+            startPanicMode() // auto-share location so the map is useful right away
+            wantsBuddyMap = true
+        }
+    }
+
+    /// Keeps the Live Activity (Dynamic Island) in step with the current mesh
+    /// state — connected buddies and whether we're sharing our location.
+    private func syncLiveActivity() {
+        liveActivity.update(connectedPeers: connectedPeers,
+                            group: groupCode,
+                            sharingLocation: isPanicBroadcasting)
+    }
+
+    /// Starts/stops a demo Live Activity so the Dynamic Island can be previewed
+    /// on a single device without a second buddy connected. Surfaces the real
+    /// reason if nothing appears.
+    func toggleDemoLiveActivity() {
+        if isDemoActivityRunning {
+            liveActivity.end()
+            isDemoActivityRunning = false
+            flashToast("Ended demo Live Activity")
+            return
+        }
+        switch liveActivity.startDemo() {
+        case .started:
+            isDemoActivityRunning = true
+            // iOS hides your own Live Activity while its app is foregrounded,
+            // so tell the user to leave the app to actually see the pill.
+            flashToast("Swipe to Home or lock \u{2014} then see the Dynamic Island")
+        case .disabled:
+            flashToast("Turn on Live Activities in Settings \u{203A} District")
+        case .failed(let reason):
+            flashToast("Live Activity failed: \(reason)")
+            note("Live Activity error: \(reason)")
         }
     }
 
@@ -472,6 +547,7 @@ final class MeshConnectivityManager: NSObject {
         }
         isPanicBroadcasting = true
         flashToast("Sharing your live location")
+        syncLiveActivity() // show "Sharing location" in the Dynamic Island
         enableBackgroundLocation() // keep sharing when the screen is locked
 
         if isLocationAuthorized {
@@ -498,6 +574,7 @@ final class MeshConnectivityManager: NSObject {
         guard isPanicBroadcasting else { return }
         isPanicBroadcasting = false
         flashToast("Stopped sharing location")
+        syncLiveActivity() // reflect that we're no longer sharing
         panicTask?.cancel()
         panicTask = nil
         locationManager.stopUpdatingLocation()
@@ -537,11 +614,15 @@ final class MeshConnectivityManager: NSObject {
 
     // MARK: Matchmaking (solo → find solo players)
 
-    /// Solo players (other than us) still actively looking, freshest first.
+    /// Solo players (other than us) looking to play the *same* activity we are,
+    /// freshest presence only, sorted by name. Returns nothing when we aren't
+    /// looking — you only match with players who picked the same sport, so a
+    /// cricket player never sees someone looking for football.
     var activeLFGPlayers: [LFGPlayer] {
+        guard let mine = myLFGActivity else { return [] }
         let cutoff = Date().addingTimeInterval(-30)
         return lfgPlayers.values
-            .filter { $0.name != myName && $0.date > cutoff }
+            .filter { $0.name != myName && $0.activity == mine && $0.date > cutoff }
             .sorted { $0.name < $1.name }
     }
 
@@ -566,10 +647,38 @@ final class MeshConnectivityManager: NSObject {
         myLFGActivity = nil
         lfgTask?.cancel()
         lfgTask = nil
+        // Leaving the pool clears any pending team-up state.
+        incomingInvites.removeAll()
+        sentInvites.removeAll()
+        teammates.removeAll()
         let packet = MeshRelayPacket(kind: .lfg, senderName: myName, text: "")
         _ = seen.insertIfNew(packet.id)
         broadcast(packet, excluding: nil)
         flashToast("Stopped looking")
+    }
+
+    /// Invites `playerName` to team up for the activity we're currently looking
+    /// for. The invite travels across the mesh; only that player acts on it.
+    func inviteToGame(_ playerName: String) {
+        guard let activity = myLFGActivity else { return }
+        sentInvites.insert(playerName)
+        let packet = MeshRelayPacket(kind: .gameInvite, senderName: myName,
+                                     text: activity, recipient: playerName)
+        _ = seen.insertIfNew(packet.id)
+        broadcast(packet, excluding: nil)
+        flashToast("Invited \(playerName) to play \(activity)")
+    }
+
+    /// Accepts a pending invite from `playerName`, notifying them that we've
+    /// teamed up. Both sides then show each other as teammates.
+    func acceptInvite(from playerName: String) {
+        guard let invite = incomingInvites.removeValue(forKey: playerName) else { return }
+        teammates.insert(playerName)
+        let packet = MeshRelayPacket(kind: .gameAccept, senderName: myName,
+                                     text: invite.activity, recipient: playerName)
+        _ = seen.insertIfNew(packet.id)
+        broadcast(packet, excluding: nil)
+        flashToast("You teamed up with \(playerName) for \(invite.activity)!")
     }
 
     private func broadcastLFG() {
@@ -640,7 +749,24 @@ final class MeshConnectivityManager: NSObject {
             if let activity = packet.text, !activity.isEmpty {
                 lfgPlayers[packet.senderName] = LFGPlayer(name: packet.senderName, activity: activity, date: packet.timestamp)
             } else {
+                // Player stopped looking: drop them and any team-up state we held.
                 lfgPlayers.removeValue(forKey: packet.senderName)
+                incomingInvites.removeValue(forKey: packet.senderName)
+                sentInvites.remove(packet.senderName)
+                teammates.remove(packet.senderName)
+            }
+        case .gameInvite:
+            // Only the addressed recipient records the invite; everyone else just relays it.
+            if packet.recipient == myName, let activity = packet.text, !activity.isEmpty {
+                incomingInvites[packet.senderName] = GameInvite(from: packet.senderName, activity: activity, date: packet.timestamp)
+                flashToast("\(packet.senderName) invited you to play \(activity)")
+            }
+        case .gameAccept:
+            // Our invite was accepted — mark the sender as a teammate.
+            if packet.recipient == myName {
+                sentInvites.remove(packet.senderName)
+                teammates.insert(packet.senderName)
+                flashToast("\(packet.senderName) accepted \u{2014} you're teamed up!")
             }
         }
 
@@ -670,13 +796,13 @@ extension MeshConnectivityManager: MCSessionDelegate {
                     Self.haptic(.light)
                 }
                 self.flushOutbox()
-                self.liveActivity.sync(connectedPeers: self.connectedPeers, group: self.groupCode)
+                self.syncLiveActivity()
                 self.note("Connected: \(peerID.displayName)")
             case .notConnected:
                 self.peerIDsByName.removeValue(forKey: peerID.displayName)
                 self.connectedPeers.removeAll { $0 == peerID.displayName }
                 self.emergencyBuddies.remove(peerID.displayName)
-                self.liveActivity.sync(connectedPeers: self.connectedPeers, group: self.groupCode)
+                self.syncLiveActivity()
                 self.note("Disconnected: \(peerID.displayName)")
                 // If we were on a call with this peer, tear it down.
                 if self.voice.activePeer == peerID.displayName {

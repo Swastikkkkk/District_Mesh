@@ -55,6 +55,13 @@ struct MeshTestView: View {
             WalkthroughView { showTour = false }
         }
         .onAppear { if !tourSeen { showTour = true } }
+        // Siri "find my buddy" flips this flag; open the map, then reset it.
+        .onChange(of: mesh.wantsBuddyMap) { _, want in
+            if want {
+                showMap = true
+                mesh.wantsBuddyMap = false
+            }
+        }
     }
 }
 

@@ -9,8 +9,11 @@ struct DistrictWidgetsAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         /// Number of buddies currently connected.
         var connectedCount: Int
-        /// Short status line, e.g. "Alex + 2 nearby".
+        /// Short status line, e.g. "Alex + 2 nearby" or "with Suryansh".
         var headline: String
+        /// True while we're actively sharing our live location with the crew,
+        /// which changes the title/icon shown in the Dynamic Island.
+        var isSharingLocation: Bool = false
     }
 
     /// The mesh group name (fixed for the life of the activity).

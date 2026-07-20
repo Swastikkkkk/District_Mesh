@@ -8,55 +8,83 @@ import SwiftUI
 // "DistrictWidgets").
 
 struct DistrictWidgetsLiveActivity: Widget {
-    private let accent = Color(red: 0.45, green: 0.30, blue: 0.95)
+    // Vivid high-contrast colors so the pill is impossible to miss against the
+    // black Dynamic Island / lock screen.
+    private let accent = Color.green
+    private let accent2 = Color(red: 0.0, green: 0.9, blue: 1.0) // bright cyan
+
+    private func icon(_ state: DistrictWidgetsAttributes.ContentState) -> String {
+        state.isSharingLocation ? "location.fill" : "dot.radiowaves.left.and.right"
+    }
+    private func title(_ state: DistrictWidgetsAttributes.ContentState) -> String {
+        state.isSharingLocation ? "Sharing location" : "Live on mesh"
+    }
 
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: DistrictWidgetsAttributes.self) { context in
             // Lock screen / banner
             HStack(spacing: 14) {
-                Image(systemName: "dot.radiowaves.left.and.right")
-                    .font(.title2).foregroundStyle(accent)
+                ZStack {
+                    Circle().fill(accent).frame(width: 46, height: 46)
+                    Image(systemName: icon(context.state))
+                        .font(.title3.bold()).foregroundStyle(.black)
+                }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("District Mesh").font(.headline)
-                    Text(context.state.headline).font(.subheadline).foregroundStyle(.secondary)
+                    Text(title(context.state)).font(.headline.bold()).foregroundStyle(accent)
+                    Text(context.state.headline)
+                        .font(.subheadline).foregroundStyle(.white)
                 }
                 Spacer()
                 countBadge(context.state.connectedCount)
             }
             .padding()
-            .activityBackgroundTint(.black.opacity(0.55))
-            .activitySystemActionForegroundColor(.white)
+            .activityBackgroundTint(.black)
+            .activitySystemActionForegroundColor(accent)
 
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Image(systemName: "dot.radiowaves.left.and.right")
-                        .font(.title2).foregroundStyle(accent)
+                    Label {
+                        Text(context.state.isSharingLocation ? "Location" : "Mesh")
+                            .font(.caption.bold()).foregroundStyle(.white)
+                    } icon: {
+                        Image(systemName: icon(context.state)).foregroundStyle(accent)
+                    }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
                     countBadge(context.state.connectedCount)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text("District Mesh").font(.headline)
+                    Text(title(context.state))
+                        .font(.caption.bold()).foregroundStyle(accent)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.headline).font(.caption).foregroundStyle(.secondary)
+                    Text(context.state.headline)
+                        .font(.headline.bold()).foregroundStyle(.white)
                 }
             } compactLeading: {
-                Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(accent)
+                Image(systemName: icon(context.state))
+                    .font(.body.bold())
+                    .foregroundStyle(accent)
             } compactTrailing: {
-                Text("\(context.state.connectedCount)").font(.caption.bold())
+                Text("\(context.state.connectedCount)")
+                    .font(.body.bold())
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 8).padding(.vertical, 2)
+                    .background(accent, in: Capsule())
             } minimal: {
-                Image(systemName: "dot.radiowaves.left.and.right").foregroundStyle(accent)
+                Image(systemName: icon(context.state))
+                    .font(.body.bold())
+                    .foregroundStyle(accent)
             }
             .keylineTint(accent)
         }
     }
 
     private func countBadge(_ count: Int) -> some View {
-        Text("\(count) on mesh")
-            .font(.caption.weight(.semibold))
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(accent.opacity(0.25), in: Capsule())
+        Label("\(count)", systemImage: "person.2.fill")
+            .font(.subheadline.weight(.bold)).foregroundStyle(.black)
+            .padding(.horizontal, 12).padding(.vertical, 6)
+            .background(accent, in: Capsule())
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import AppIntents
 
 /// Solo matchmaking: announce you're looking to team up for an activity and see
 /// other solo players nearby doing the same, all over the mesh (no backend).
@@ -24,13 +25,20 @@ struct MatchmakeView: View {
 
     private var isLooking: Bool { mesh.myLFGActivity != nil }
     private var players: [LFGPlayer] { mesh.activeLFGPlayers }
+    private var invites: [GameInvite] {
+        mesh.incomingInvites.values.sorted { $0.date > $1.date }
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 intro
+                // Teaches the "Hey Siri, find football players" phrase in-app.
+                SiriTipView(intent: FindPlayersIntent())
+                    .tint(DistrictTheme.accent)
                 activityPicker
                 lookButton
+                if !invites.isEmpty { invitesSection }
                 playersSection
             }
             .padding()
@@ -88,18 +96,50 @@ struct MatchmakeView: View {
         ))
     }
 
+    private var invitesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Invites for you", systemImage: "envelope.fill")
+                .font(.headline).foregroundStyle(.white)
+
+            ForEach(invites) { invite in
+                HStack(spacing: 12) {
+                    InitialsAvatar(name: invite.from, size: 42)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(invite.from).font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                        Text("Wants to play \(invite.activity)")
+                            .font(.caption).foregroundStyle(.white.opacity(0.6))
+                    }
+                    Spacer()
+                    Button {
+                        MeshConnectivityManager.haptic(.light)
+                        mesh.acceptInvite(from: invite.from)
+                    } label: {
+                        Label("Accept", systemImage: "checkmark")
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                            .padding(.horizontal, 14).padding(.vertical, 7)
+                            .background(.green, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassCard()
+    }
+
     private var playersSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(isLooking ? "Players nearby" : "Start looking to see players")
+            Text(isLooking ? "\(activity.rawValue) players nearby" : "Start looking to see players")
                 .font(.headline).foregroundStyle(.white)
 
             if players.isEmpty {
-                Text(isLooking ? "Waiting for other solo players to appear\u{2026}"
+                Text(isLooking ? "Waiting for other \(activity.rawValue) players to appear\u{2026}"
                                : "Tap the button above to announce you're up for a game.")
                     .font(.subheadline).foregroundStyle(.white.opacity(0.6))
             } else {
                 ForEach(players) { player in
-                    PlayerRow(mesh: mesh, player: player, myActivity: mesh.myLFGActivity)
+                    PlayerRow(mesh: mesh, player: player)
                 }
             }
         }
@@ -111,9 +151,12 @@ struct MatchmakeView: View {
 private struct PlayerRow: View {
     let mesh: MeshConnectivityManager
     let player: LFGPlayer
-    let myActivity: String?
 
-    private var isMatch: Bool { myActivity == player.activity }
+    // Every player shown here already shares our activity, so the row's trailing
+    // control reflects where we are in the invite → accept handshake.
+    private var isTeammate: Bool { mesh.teammates.contains(player.name) }
+    private var invitedThem: Bool { mesh.sentInvites.contains(player.name) }
+    private var theyInvitedMe: Bool { mesh.incomingInvites[player.name] != nil }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -123,16 +166,37 @@ private struct PlayerRow: View {
                 Text(player.activity).font(.caption).foregroundStyle(.white.opacity(0.6))
             }
             Spacer()
-            if isMatch {
-                Text("Match")
-                    .font(.caption2.weight(.bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(.green, in: Capsule())
-            }
+            trailingControl
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private var trailingControl: some View {
+        if isTeammate {
+            Label("Teamed up", systemImage: "checkmark.circle.fill")
+                .font(.caption.weight(.bold)).foregroundStyle(.white)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(.green, in: Capsule())
+        } else if theyInvitedMe {
             Button {
                 MeshConnectivityManager.haptic(.light)
-                mesh.sendMessage("Hey \(player.name), let's team up for \(player.activity)!")
-                mesh.flashToast("Invite sent to chat")
+                mesh.acceptInvite(from: player.name)
+            } label: {
+                Text("Accept").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 7)
+                    .background(.green, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        } else if invitedThem {
+            Text("Invited\u{2026}")
+                .font(.subheadline.weight(.medium)).foregroundStyle(.white.opacity(0.7))
+                .padding(.horizontal, 14).padding(.vertical, 7)
+                .background(.white.opacity(0.08), in: Capsule())
+        } else {
+            Button {
+                MeshConnectivityManager.haptic(.light)
+                mesh.inviteToGame(player.name)
             } label: {
                 Text("Invite").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
                     .padding(.horizontal, 14).padding(.vertical, 7)
@@ -140,6 +204,5 @@ private struct PlayerRow: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.vertical, 4)
     }
 }
