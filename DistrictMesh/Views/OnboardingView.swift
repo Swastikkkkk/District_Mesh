@@ -120,7 +120,7 @@ struct OnboardingView: View {
             Text("Create or join\na mesh")
                 .font(.title.bold())
                 .multilineTextAlignment(.center)
-            glassField("Group code (e.g. coachella-squad)", text: $group)
+            glassField("Group code — or leave blank for open mesh", text: $group)
             Button {
                 group = Self.suggestGroupCode()
             } label: {
@@ -128,10 +128,14 @@ struct OnboardingView: View {
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white)
             }
-            Text("Everyone who enters the same code joins the same private mesh \u{2014} share it with your crew.")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
+            VStack(spacing: 6) {
+                Text("**Leave blank** — connects to any District device nearby.")
+                    .font(.footnote).foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                Text("**Enter a code** — only phones with the same code can join. Share it with your crew.")
+                    .font(.footnote).foregroundStyle(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+            }
         }
     }
 
@@ -144,7 +148,7 @@ struct OnboardingView: View {
             VStack(spacing: 10) {
                 summaryRow("person.fill", "Name", name)
                 Divider().overlay(.white.opacity(0.2))
-                summaryRow("person.3.fill", "Mesh group", group)
+                summaryRow("person.3.fill", "Mesh group", group.trimmingCharacters(in: .whitespaces).isEmpty ? "Open mesh" : group)
             }
             .padding(18)
             .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 16))
@@ -165,8 +169,7 @@ struct OnboardingView: View {
             }
             .buttonStyle(DistrictButtonStyle(
                 tint: LinearGradient(colors: [.white], startPoint: .top, endPoint: .bottom),
-                foreground: DistrictTheme.accent,
-                disabled: !canAdvance
+                foreground: DistrictTheme.accent
             ))
             .disabled(!canAdvance)
 
@@ -183,7 +186,7 @@ struct OnboardingView: View {
     private var canAdvance: Bool {
         switch step {
         case .name:  return !name.trimmingCharacters(in: .whitespaces).isEmpty
-        case .group: return !group.trimmingCharacters(in: .whitespaces).isEmpty
+        case .group: return true
         default:     return true
         }
     }

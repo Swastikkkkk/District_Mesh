@@ -1,16 +1,16 @@
 //
-//  DistrictWidgetsControl.swift
-//  DistrictWidgets
+//  WidgetControl.swift
+//  Widget
 //
-//  Created by Swastik on 19/07/26.
+//  Created by Swastik on 20/08/26.
 //
 
 import AppIntents
 import SwiftUI
 import WidgetKit
 
-struct DistrictWidgetsControl: ControlWidget {
-    static let kind: String = "com.swastik.districtmesh.DistrictWidgets"
+struct WidgetControl: ControlWidget {
+    static let kind: String = "com.swastik.districtmesh.Widget"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(
@@ -30,7 +30,7 @@ struct DistrictWidgetsControl: ControlWidget {
     }
 }
 
-extension DistrictWidgetsControl {
+extension WidgetControl {
     struct Value {
         var isRunning: Bool
         var name: String
@@ -38,12 +38,12 @@ extension DistrictWidgetsControl {
 
     struct Provider: AppIntentControlValueProvider {
         func previewValue(configuration: TimerConfiguration) -> Value {
-            DistrictWidgetsControl.Value(isRunning: false, name: configuration.timerName)
+            WidgetControl.Value(isRunning: false, name: configuration.timerName)
         }
 
         func currentValue(configuration: TimerConfiguration) async throws -> Value {
             let isRunning = true // Check if the timer is running
-            return DistrictWidgetsControl.Value(isRunning: isRunning, name: configuration.timerName)
+            return WidgetControl.Value(isRunning: isRunning, name: configuration.timerName)
         }
     }
 }

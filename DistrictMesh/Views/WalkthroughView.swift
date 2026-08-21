@@ -1,8 +1,5 @@
 import SwiftUI
 
-/// A guided, swipeable tour shown on first entry (and replayable from Home) that
-/// walks a user through every core function: go live, find people, call/video,
-/// chat, share location / SOS, the map, and how off-grid range works.
 struct WalkthroughView: View {
 
     var onFinish: () -> Void
@@ -23,7 +20,7 @@ struct WalkthroughView: View {
              tint: DistrictTheme.accent),
         Page(icon: "person.2.fill",
              title: "Find your people",
-             body: "Everyone in the same group appears in the People tab. Tap a person to Message, Call, or start a Video call \u{2014} all over the mesh.",
+             body: "Connected buddies appear in the People strip on the Home tab. Tap their chip to call or video-chat \u{2014} all over the mesh, no internet.",
              tint: .blue),
         Page(icon: "bubble.left.and.bubble.right.fill",
              title: "Chat with the crew",
@@ -61,9 +58,7 @@ struct WalkthroughView: View {
                             pageView(page).tag(i)
                         }
                     }
-                    #if os(iOS)
                     .tabViewStyle(.page(indexDisplayMode: .never))
-                    #endif
                 }
 
                 dots

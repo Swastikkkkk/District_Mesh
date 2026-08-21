@@ -1,8 +1,8 @@
 //
 //  AppIntent.swift
-//  DistrictWidgets
+//  Widget
 //
-//  Created by Swastik on 19/07/26.
+//  Created by Swastik on 20/08/26.
 //
 
 import WidgetKit

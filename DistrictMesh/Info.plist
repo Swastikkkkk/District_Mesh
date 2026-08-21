@@ -5,7 +5,14 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_district-mesh._tcp</string>
+		<string>_district-mesh._udp</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>District Mesh needs Local Network access to discover and connect to nearby phones over Wi-Fi and Bluetooth — no internet required.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
