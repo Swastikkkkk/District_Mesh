@@ -66,7 +66,7 @@ jobs:
           set -o pipefail
           xcodebuild -project DistrictMesh.xcodeproj -scheme DistrictMesh -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath dd CODE_SIGNING_ALLOWED=NO build | tail -1
-      - name: Three-simulator mesh test
+      - name: Two-simulator mesh test
         timeout-minutes: 20
         run: |
           bash Tests/sim-mesh-test.sh dd/Build/Products/Debug-iphonesimulator/DistrictMesh.app sim-out
