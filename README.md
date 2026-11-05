@@ -30,6 +30,8 @@ flowchart LR
 
 A and D are never in range of each other. The message still arrives, exactly once. This logic is tested on every push by a simulation that runs the app's real packet and router code over chains, loops and a 15-phone line (see `Tests/RelaySimulation`).
 
+Every push also runs an end-to-end test on two iOS simulators with the real MultipeerConnectivity stack: discovery, encrypted connect, chat both ways, SOS flood, drop detection with auto re-scan, and group isolation (see `Tests/sim-mesh-test.sh`).
+
 ## Install
 
 You need **at least two iPhones on iOS 26 or later**. The simulator has no Bluetooth or peer-to-peer Wi-Fi, so it can't form a mesh.
@@ -128,6 +130,7 @@ DistrictMesh/
   Views/                                     dashboard, chat, map, compass, call, onboarding
 Widget/                                      Mesh Status widget, SOS control, Live Activity UI
 Tests/RelaySimulation/                       multi-hop relay simulation (runs in CI)
+Tests/sim-mesh-test.sh                       two-simulator end-to-end mesh test (runs in CI)
 .github/workflows/build.yml                  builds the app, runs the simulation, packages the IPA
 ```
 
