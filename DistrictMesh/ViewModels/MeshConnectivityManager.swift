@@ -507,6 +507,8 @@ extension MeshConnectivityManager: MCSessionDelegate {
     }
 
     nonisolated func session(_ session: MCSession, didReceive stream: InputStream, withName streamName: String, fromPeer peerID: MCPeerID) {
+        // The stream is handed straight to the call thread and never touched here again.
+        nonisolated(unsafe) let stream = stream
         Task { @MainActor in self.voice.handleIncomingStream(stream, name: streamName, from: peerID, session: session) }
     }
 
