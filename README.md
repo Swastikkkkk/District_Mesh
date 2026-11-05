@@ -57,7 +57,7 @@ You need **at least two iPhones on iOS 26 or later**. The simulator has no Bluet
 
 Every push builds an unsigned IPA on GitHub Actions.
 
-1. Open the latest [Releases](https://github.com/Swastikkkkk/District_Mesh/releases) page (or the newest green run under **Actions**) and download `DistrictMesh-unsigned.ipa`.
+1. Open the newest green run under [Actions](https://github.com/Swastikkkkk/District_Mesh/actions/workflows/build.yml) (sign in to GitHub), scroll to **Artifacts** and download `DistrictMesh-unsigned-ipa`. Unzip it to get `DistrictMesh-unsigned.ipa`.
 2. Install [Sideloadly](https://sideloadly.io) or AltStore, connect your iPhone, drop in the IPA and sign in with your Apple ID.
 3. On the phone, trust the developer under **Settings > General > VPN & Device Management**.
 
