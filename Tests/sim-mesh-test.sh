@@ -7,6 +7,8 @@
 # Checks: discovery + encrypted session, chat, 2-hop relay Alice -> Bob -> Carol,
 # SOS flood over 2 hops via the districtmesh://sos deep link, group isolation.
 set -uo pipefail
+NAMES="Alice Bob Carol Dave"
+udid() { eval echo "\$U_$1"; }
 
 APP="$1"                      # path to DistrictMesh.app (Debug, iphonesimulator)
 OUT="${2:-sim-out}"
@@ -17,15 +19,14 @@ DT=$(xcrun simctl list devicetypes | grep -E "^iPhone 1[5-9] \(" | tail -1 | sed
 RT=$(xcrun simctl list runtimes | grep -E "^iOS 26" | tail -1 | sed -E 's/.* - (com[^ ]+).*/\1/')
 echo "device type: $DT  runtime: $RT"
 
-declare -A UDID
-for n in Alice Bob Carol Dave; do
-  UDID[$n]=$(xcrun simctl create "mesh-$n" "$DT" "$RT")
-  xcrun simctl boot "${UDID[$n]}"
+for n in $NAMES; do
+  eval "U_$n=$(xcrun simctl create "mesh-$n" "$DT" "$RT")" || exit 1
+  xcrun simctl boot "$(udid $n)" || exit 1
 done
-for n in Alice Bob Carol Dave; do xcrun simctl bootstatus "${UDID[$n]}" -b >/dev/null; done
+for n in $NAMES; do xcrun simctl bootstatus "$(udid $n)" -b >/dev/null; done
 
-for n in Alice Bob Carol Dave; do
-  u=${UDID[$n]}
+for n in $NAMES; do
+  u=$(udid $n)
   xcrun simctl install "$u" "$APP"
   xcrun simctl privacy "$u" grant location-always "$BID" || true
   xcrun simctl privacy "$u" grant microphone "$BID" || true
@@ -38,7 +39,7 @@ sleep 3
 launch() { # name group only [send]
   local args=(-district.onboarded YES -district.walkthroughDone YES -district.displayName "$1" -district.groupCode "$2" -meshTestOnly "$3")
   [ -n "${4:-}" ] && args+=(-meshTestSend "$4")
-  xcrun simctl launch "${UDID[$1]}" "$BID" "${args[@]}"
+  xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}"
 }
 launch Bob   ci    Alice,Carol
 launch Carol ci    Bob
@@ -46,10 +47,10 @@ launch Alice ci    Bob "hello from alice"
 launch Dave  other Alice,Bob,Carol
 
 echo "waiting for mesh + messages..."; sleep 60
-xcrun simctl openurl "${UDID[Alice]}" districtmesh://sos
+xcrun simctl openurl "$(udid Alice)" districtmesh://sos
 echo "SOS sent, waiting..."; sleep 25
 
-for n in Alice Bob Carol Dave; do xcrun simctl io "${UDID[$n]}" screenshot "$OUT/$n.png" >/dev/null 2>&1 || true; done
+for n in $NAMES; do xcrun simctl io "$(udid $n)" screenshot "$OUT/$n.png" >/dev/null 2>&1 || true; done
 kill $(jobs -p) 2>/dev/null; sleep 1
 
 fail=0
@@ -63,6 +64,7 @@ check is  Carol "SOS from Alice"                   "Carol gets Alice's SOS over 
 check not Dave  "Connected:"                       "Different group never connects"
 check not Carol "Message from Alice via Alice"     "No impossible direct path"
 
-for n in Alice Bob Carol Dave; do echo "--- $n"; grep -vE "^Filtering|^Timestamp" "$OUT/$n.log" | tail -15; done
-for n in Alice Bob Carol Dave; do xcrun simctl delete "${UDID[$n]}" >/dev/null 2>&1; done
+for n in $NAMES; do echo "--- $n"; grep -vE "^Filtering|^Timestamp" "$OUT/$n.log" | tail -15; done
+for n in $NAMES; do xcrun simctl delete "$(udid $n)" >/dev/null 2>&1; done
+[ $fail = 0 ] && echo "ALL MESH CHECKS PASSED" > "$OUT/RESULT"
 exit $fail

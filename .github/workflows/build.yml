@@ -67,7 +67,9 @@ jobs:
           xcodebuild -project DistrictMesh.xcodeproj -scheme DistrictMesh -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath dd CODE_SIGNING_ALLOWED=NO build | tail -1
       - name: Four-simulator mesh test
-        run: bash Tests/sim-mesh-test.sh dd/Build/Products/Debug-iphonesimulator/DistrictMesh.app sim-out
+        run: |
+          bash Tests/sim-mesh-test.sh dd/Build/Products/Debug-iphonesimulator/DistrictMesh.app sim-out
+          grep -q "ALL MESH CHECKS PASSED" sim-out/RESULT
       - uses: actions/upload-artifact@v4
         if: always()
         with:
