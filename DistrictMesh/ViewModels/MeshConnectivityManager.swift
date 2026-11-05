@@ -91,7 +91,7 @@ final class MeshConnectivityManager: NSObject {
     }
 
     private func note(_ message: String) {
-        log.info("\(message, privacy: .public)")
+        log.notice("\(message, privacy: .public)")
         statusLog.append(message)
         if statusLog.count > 40 { statusLog.removeFirst(statusLog.count - 40) }
     }
@@ -393,6 +393,7 @@ final class MeshConnectivityManager: NSObject {
         switch packet.kind {
         case .message:
             if let text = packet.text {
+                note("Message from \(packet.senderName) via \(peerID.displayName): \(text)")
                 receivedMessages.append(MeshMessage(sender: packet.senderName, text: text, date: packet.timestamp))
             }
         case .location:
@@ -407,6 +408,7 @@ final class MeshConnectivityManager: NSObject {
                     emergencyBuddies.insert(packet.senderName)
                     if !wasEmergency {
                         flashToast("SOS from \(packet.senderName)")
+                        note("SOS from \(packet.senderName)")
                         UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     }
                 } else {
@@ -462,6 +464,39 @@ final class MeshConnectivityManager: NSObject {
     }
 }
 
+// MARK: - CI hooks (Debug builds only)
+//
+// Used by Tests/sim-mesh-test.sh to drive several simulators without touching
+// the UI. `-meshTestOnly Bob,Carol` limits who this phone links to (forcing a
+// chain so multi-hop is really exercised), `-meshTestSend text` sends a few
+// chat messages once connected. Release builds ignore both.
+
+extension MeshConnectivityManager {
+    private static var testSending = false
+
+    fileprivate func testAllows(_ name: String) -> Bool {
+        #if DEBUG
+        if let only = UserDefaults.standard.string(forKey: "meshTestOnly") {
+            return only.split(separator: ",").map(String.init).contains(name)
+        }
+        #endif
+        return true
+    }
+
+    fileprivate func startTestSenderIfNeeded() {
+        #if DEBUG
+        guard let text = UserDefaults.standard.string(forKey: "meshTestSend"), !Self.testSending else { return }
+        Self.testSending = true
+        Task { [weak self] in
+            for i in 1...6 {
+                try? await Task.sleep(for: .seconds(8))
+                self?.sendMessage("\(text) \(i)")
+            }
+        }
+        #endif
+    }
+}
+
 // MARK: - MCSessionDelegate
 
 extension MeshConnectivityManager: MCSessionDelegate {
@@ -481,6 +516,7 @@ extension MeshConnectivityManager: MCSessionDelegate {
                     self.publishWidgetState()
                 }
                 self.flushOutbox()
+                self.startTestSenderIfNeeded()
                 self.note("Connected: \(peerID.displayName)")
                 self.syncLiveActivity()
             case .notConnected:
@@ -523,6 +559,7 @@ extension MeshConnectivityManager: MCNearbyServiceAdvertiserDelegate {
     nonisolated func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
         let theirGroup = context.flatMap { String(data: $0, encoding: .utf8) } ?? ""
         Task { @MainActor in
+            guard self.testAllows(peerID.displayName) else { invitationHandler(false, nil); return }
             guard theirGroup == self.groupCode else {
                 self.note("Invitation from \(peerID.displayName) ignored (different group)")
                 invitationHandler(false, nil)
@@ -549,7 +586,7 @@ extension MeshConnectivityManager: MCNearbyServiceBrowserDelegate {
     nonisolated func browser(_ browser: MCNearbyServiceBrowser, foundPeer peerID: MCPeerID, withDiscoveryInfo info: [String: String]?) {
         let theirToken = info?["token"]; let theirGroup = info?["group"] ?? ""
         Task { @MainActor in
-            guard theirGroup == self.groupCode else { return }
+            guard theirGroup == self.groupCode, self.testAllows(peerID.displayName) else { return }
             self.note("Found \(peerID.displayName)")
             if let theirToken, self.myToken >= theirToken {
                 self.note("Waiting for \(peerID.displayName) to invite (tie-break)")
