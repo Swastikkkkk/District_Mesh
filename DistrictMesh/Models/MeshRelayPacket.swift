@@ -81,3 +81,39 @@ struct SeenPacketCache {
         return true
     }
 }
+
+/// The relay decision every phone makes for every packet it sees.
+///
+/// Kept free of MultipeerConnectivity so the flooding behaviour can be tested
+/// on its own (see `Tests/RelaySimulation.swift`).
+struct MeshRouter {
+    enum Decision: Equatable {
+        /// Already seen. Ignore it and do not forward.
+        case drop
+        /// New packet. Deliver it locally, and forward `forward` to every
+        /// neighbour except the one it came from (nil once TTL runs out).
+        case deliver(forward: MeshRelayPacket?)
+
+        static func == (lhs: Decision, rhs: Decision) -> Bool {
+            switch (lhs, rhs) {
+            case (.drop, .drop): return true
+            case let (.deliver(a), .deliver(b)): return a?.id == b?.id && a?.ttl == b?.ttl
+            default: return false
+            }
+        }
+    }
+
+    private var seen = SeenPacketCache()
+
+    /// Call for packets this phone originates so echoes coming back are dropped.
+    mutating func markOwn(_ packet: MeshRelayPacket) {
+        _ = seen.insertIfNew(packet.id)
+    }
+
+    mutating func receive(_ packet: MeshRelayPacket) -> Decision {
+        guard seen.insertIfNew(packet.id) else { return .drop }
+        var forwarded = packet
+        forwarded.ttl -= 1
+        return .deliver(forward: forwarded.ttl > 0 ? forwarded : nil)
+    }
+}

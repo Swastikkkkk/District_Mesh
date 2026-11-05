@@ -1,88 +1,98 @@
-//
-//  Widget.swift
-//  Widget
-//
-//  Created by Swastik on 20/08/26.
-//
-
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
+/// Reads what the app writes to the shared App Group.
+private enum MeshSnapshot {
+    static let suite = UserDefaults(suiteName: "group.com.swastik.districtmesh")
+
+    static var peers: [String] {
+        guard let data = suite?.data(forKey: "connectedPeers"),
+              let v = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return v
     }
-
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
-    }
-    
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
-
-        return Timeline(entries: entries, policy: .atEnd)
-    }
-
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    static var emergencies: [String] { suite?.stringArray(forKey: "emergencyBuddies") ?? [] }
+    static var updatedAt: Date? { suite?.object(forKey: "updatedAt") as? Date }
 }
 
-struct SimpleEntry: TimelineEntry {
+struct MeshEntry: TimelineEntry {
     let date: Date
-    let configuration: ConfigurationAppIntent
+    let peers: [String]
+    let emergencies: [String]
+    let updatedAt: Date?
 }
 
-struct WidgetEntryView : View {
-    var entry: Provider.Entry
+struct MeshProvider: TimelineProvider {
+    func placeholder(in context: Context) -> MeshEntry {
+        MeshEntry(date: .now, peers: ["Riya", "Kabir"], emergencies: [], updatedAt: .now)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (MeshEntry) -> Void) {
+        completion(context.isPreview ? placeholder(in: context) : current())
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<MeshEntry>) -> Void) {
+        // The app reloads timelines whenever peers or SOS state change.
+        completion(Timeline(entries: [current()], policy: .after(.now.addingTimeInterval(15 * 60))))
+    }
+
+    private func current() -> MeshEntry {
+        MeshEntry(date: .now, peers: MeshSnapshot.peers, emergencies: MeshSnapshot.emergencies, updatedAt: MeshSnapshot.updatedAt)
+    }
+}
+
+struct MeshWidgetView: View {
+    let entry: MeshEntry
+    @Environment(\.widgetFamily) private var family
+    private let accent = Color(red: 0.52, green: 0.35, blue: 1.0)
 
     var body: some View {
-        VStack {
-            Text("Time:")
-            Text(entry.date, style: .time)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: entry.emergencies.isEmpty ? "dot.radiowaves.left.and.right" : "exclamationmark.triangle.fill")
+                    .foregroundStyle(entry.emergencies.isEmpty ? accent : .red)
+                Text("District Mesh").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            }
 
-            Text("Favorite Emoji:")
-            Text(entry.configuration.favoriteEmoji)
+            if let sos = entry.emergencies.first {
+                Text("SOS").font(.title2.bold()).foregroundStyle(.red)
+                Text(sos).font(.subheadline.weight(.semibold)).lineLimit(1)
+            } else {
+                Text("\(entry.peers.count)").font(.system(size: 34, weight: .bold, design: .rounded))
+                Text(entry.peers.count == 1 ? "buddy nearby" : "buddies nearby")
+                    .font(.caption).foregroundStyle(.secondary)
+                if family != .systemSmall, !entry.peers.isEmpty {
+                    Text(entry.peers.prefix(4).joined(separator: ", "))
+                        .font(.caption.weight(.medium)).lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+            if let updated = entry.updatedAt {
+                Text(updated, style: .relative).font(.caption2).foregroundStyle(.tertiary)
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .widgetURL(URL(string: "districtmesh://open"))
     }
 }
 
 struct DistrictWidget: Widget {
-    let kind: String = "Widget"
+    let kind = "DistrictMeshStatus"
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-            WidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+        StaticConfiguration(kind: kind, provider: MeshProvider()) { entry in
+            MeshWidgetView(entry: entry)
+                .containerBackground(.black, for: .widget)
         }
-    }
-}
-
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
-    
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
+        .configurationDisplayName("Mesh Status")
+        .description("Who's on your mesh, and any SOS.")
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
 #Preview(as: .systemSmall) {
     DistrictWidget()
 } timeline: {
-    SimpleEntry(date: .now, configuration: .smiley)
-    SimpleEntry(date: .now, configuration: .starEyes)
+    MeshEntry(date: .now, peers: ["Riya", "Kabir", "Aman"], emergencies: [], updatedAt: .now)
+    MeshEntry(date: .now, peers: ["Riya"], emergencies: ["Riya"], updatedAt: .now)
 }

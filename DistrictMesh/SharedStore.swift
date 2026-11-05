@@ -4,6 +4,8 @@ enum SharedStore {
     static let suiteName = "group.com.swastik.districtmesh"
     private static let buddiesKey = "buddyLocations"
     private static let peersKey = "connectedPeers"
+    private static let emergencyKey = "emergencyBuddies"
+    private static let updatedKey = "updatedAt"
 
     struct BuddySnapshot: Codable, Identifiable {
         var id: String { name }
@@ -30,6 +32,11 @@ enum SharedStore {
         guard let d = UserDefaults(suiteName: suiteName),
               let data = try? JSONEncoder().encode(peers) else { return }
         d.set(data, forKey: peersKey)
+        d.set(Date(), forKey: updatedKey)
+    }
+
+    static func saveEmergencies(_ names: [String]) {
+        UserDefaults(suiteName: suiteName)?.set(names, forKey: emergencyKey)
     }
 
     static func loadConnectedPeers() -> [String] {

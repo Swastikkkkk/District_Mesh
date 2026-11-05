@@ -10,7 +10,7 @@ struct MyApp: App {
 }
 
 struct RootView: View {
-    @State private var mesh = MeshConnectivityManager()
+    @State private var mesh = MeshConnectivityManager.shared
     @AppStorage("district.onboarded") private var onboarded = false
     @AppStorage("district.walkthroughDone") private var walkthroughDone = false
     @State private var showSplash = true
@@ -29,6 +29,9 @@ struct RootView: View {
         .fontDesign(.rounded)
         .animation(.easeInOut, value: onboarded)
         .animation(.easeInOut, value: walkthroughDone)
+        .onOpenURL { url in
+            if onboarded { mesh.handle(url: url) }
+        }
         .task {
             try? await Task.sleep(for: .seconds(2.0))
             withAnimation(.easeOut(duration: 0.5)) { showSplash = false }
@@ -45,6 +48,7 @@ struct RootView: View {
             DashboardView(mesh: mesh)
                 .onAppear {
                     if !mesh.isLive { mesh.startHosting(); mesh.startBrowsing() }
+                    mesh.requestPermissions()
                 }
         }
     }

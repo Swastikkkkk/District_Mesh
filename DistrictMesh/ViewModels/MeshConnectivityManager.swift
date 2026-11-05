@@ -4,11 +4,16 @@ import MultipeerConnectivity
 import CoreLocation
 import UIKit
 import ActivityKit
+import AVFoundation
+import WidgetKit
 import os
 
 @MainActor
 @Observable
 final class MeshConnectivityManager: NSObject {
+
+    /// One mesh per app process. Views, App Intents and URL actions all share it.
+    static let shared = MeshConnectivityManager()
 
     // MARK: State
 
@@ -45,7 +50,8 @@ final class MeshConnectivityManager: NSObject {
     private var browser: MCNearbyServiceBrowser
     private let myToken: String
 
-    @ObservationIgnored private var seen = SeenPacketCache()
+    @ObservationIgnored private var router = MeshRouter()
+    @ObservationIgnored private var reconnectTask: Task<Void, Never>?
     @ObservationIgnored private let log = Logger(subsystem: "com.swastik.districtmesh", category: "mesh")
     @ObservationIgnored private let locationManager = CLLocationManager()
     @ObservationIgnored private var lastKnownCoordinate: CLLocationCoordinate2D?
@@ -172,11 +178,15 @@ final class MeshConnectivityManager: NSObject {
     }
 
     func leaveMesh() {
+        stopPanicMode()
         stopHosting()
         stopBrowsing()
         session.disconnect()
+        reconnectTask?.cancel()
         connectedPeers.removeAll()
         peerIDsByName.removeAll()
+        emergencyBuddies.removeAll()
+        publishWidgetState()
         liveActivity.end()
     }
 
@@ -230,7 +240,7 @@ final class MeshConnectivityManager: NSObject {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let packet = MeshRelayPacket(kind: .message, senderName: myName, text: trimmed)
-        _ = seen.insertIfNew(packet.id)
+        router.markOwn(packet)
         let queued = connectedPeers.isEmpty
         var message = MeshMessage(sender: myName, text: trimmed, date: packet.timestamp)
         message.pending = queued
@@ -257,12 +267,14 @@ final class MeshConnectivityManager: NSObject {
 
     // MARK: Location & panic
 
-    private func broadcastMyLocation(_ coordinate: CLLocationCoordinate2D, emergency: Bool = false) {
+    /// Floods our position. The SOS flag always reflects panic mode, so a compass
+    /// or timer broadcast can never silently clear an active emergency.
+    private func broadcastMyLocation(_ coordinate: CLLocationCoordinate2D) {
         lastKnownCoordinate = coordinate
         let packet = MeshRelayPacket(kind: .location, senderName: myName,
                                      latitude: coordinate.latitude, longitude: coordinate.longitude,
-                                     isEmergency: emergency)
-        _ = seen.insertIfNew(packet.id)
+                                     isEmergency: isPanicBroadcasting)
+        router.markOwn(packet)
         buddyLocations[myName] = BuddyLocation(name: myName, coordinate: coordinate, date: packet.timestamp)
         broadcast(packet, excluding: nil)
     }
@@ -284,6 +296,7 @@ final class MeshConnectivityManager: NSObject {
         } else if locationManager.authorizationStatus == .notDetermined {
             locationManager.requestWhenInUseAuthorization()
         }
+        panicTask?.cancel()
         panicTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(5))
@@ -296,10 +309,12 @@ final class MeshConnectivityManager: NSObject {
     func stopPanicMode() {
         guard isPanicBroadcasting else { return }
         isPanicBroadcasting = false
+        // One last packet without the SOS flag so buddies see the all-clear.
+        if let coord = lastKnownCoordinate { broadcastMyLocation(coord) }
         flashToast("Stopped sharing location")
         syncLiveActivity()
         panicTask?.cancel(); panicTask = nil
-        locationManager.stopUpdatingLocation()
+        if !compassActive { locationManager.stopUpdatingLocation() }
         locationManager.allowsBackgroundLocationUpdates = false
     }
 
@@ -314,6 +329,7 @@ final class MeshConnectivityManager: NSObject {
             locationManager.requestWhenInUseAuthorization()
         }
         if CLLocationManager.headingAvailable() { locationManager.startUpdatingHeading() }
+        compassBroadcastTask?.cancel()
         compassBroadcastTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(3))
@@ -342,10 +358,23 @@ final class MeshConnectivityManager: NSObject {
 
     // MARK: Calls
 
+    /// Calls run point-to-point over a direct link, so the buddy must be in range.
     func startCall(with peerName: String, video: Bool = false) {
-        guard let peerID = peerIDsByName[peerName] else { return }
-        voice.startCall(to: peerID, session: session)
-        if video { voice.enableVideo() }
+        guard let peerID = peerIDsByName[peerName] else {
+            flashToast("\(peerName) isn't directly connected")
+            return
+        }
+        Task {
+            if AVAudioApplication.shared.recordPermission == .undetermined {
+                _ = await AVAudioApplication.requestRecordPermission()
+            }
+            guard AVAudioApplication.shared.recordPermission == .granted else {
+                flashToast("Allow Microphone in Settings to call")
+                return
+            }
+            voice.startCall(to: peerID, session: session)
+            if video { voice.enableVideo() }
+        }
     }
 
     func endCall() { voice.endCall() }
@@ -360,7 +389,7 @@ final class MeshConnectivityManager: NSObject {
     }
 
     private func handleIncoming(_ packet: MeshRelayPacket, from peerID: MCPeerID) {
-        guard seen.insertIfNew(packet.id) else { return }
+        guard case .deliver(let forward) = router.receive(packet) else { return }
         switch packet.kind {
         case .message:
             if let text = packet.text {
@@ -373,15 +402,63 @@ final class MeshConnectivityManager: NSObject {
                     coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lng),
                     date: packet.timestamp
                 )
-                if packet.isEmergency == true { emergencyBuddies.insert(packet.senderName) }
-                else { emergencyBuddies.remove(packet.senderName) }
+                let wasEmergency = emergencyBuddies.contains(packet.senderName)
+                if packet.isEmergency == true {
+                    emergencyBuddies.insert(packet.senderName)
+                    if !wasEmergency {
+                        flashToast("SOS from \(packet.senderName)")
+                        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                    }
+                } else {
+                    emergencyBuddies.remove(packet.senderName)
+                }
                 SharedStore.saveBuddies(buddyLocations.values.map {
                     SharedStore.BuddySnapshot(name: $0.name, lat: $0.coordinate.latitude, lon: $0.coordinate.longitude, date: $0.date)
                 })
+                if wasEmergency != emergencyBuddies.contains(packet.senderName) { publishWidgetState() }
             }
         }
-        var forwarded = packet; forwarded.ttl -= 1
-        if forwarded.ttl > 0 { broadcast(forwarded, excluding: peerID) }
+        if let forward { broadcast(forward, excluding: peerID) }
+    }
+
+    // MARK: Widgets, permissions, deep links
+
+    private func publishWidgetState() {
+        SharedStore.saveConnectedPeers(connectedPeers)
+        SharedStore.saveEmergencies(Array(emergencyBuddies))
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Asks for everything up front so the first call or SOS is never blocked
+    /// by a prompt the other person can't see.
+    func requestPermissions() {
+        if locationManager.authorizationStatus == .notDetermined {
+            locationManager.requestWhenInUseAuthorization()
+        }
+        if AVAudioApplication.shared.recordPermission == .undetermined {
+            AVAudioApplication.requestRecordPermission { _ in }
+        }
+    }
+
+    /// `districtmesh://sos` starts panic mode (used by the Control Center
+    /// button and the SOS shortcut). `districtmesh://open` just opens the app.
+    func handle(url: URL) {
+        guard url.scheme == "districtmesh" else { return }
+        if !isLive { startHosting(); startBrowsing() }
+        if url.host == "sos" { startPanicMode() }
+    }
+
+    /// MultipeerConnectivity won't report a peer again while it's still in
+    /// range, so after a drop we restart browsing to pick it back up.
+    private func scheduleRediscovery() {
+        reconnectTask?.cancel()
+        reconnectTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, self.isBrowsing else { return }
+            self.browser.stopBrowsingForPeers()
+            self.browser.startBrowsingForPeers()
+            self.note("Re-scanning for buddies")
+        }
     }
 }
 
@@ -401,20 +478,21 @@ extension MeshConnectivityManager: MCSessionDelegate {
                     self.receivedMessages.append(MeshMessage(sender: "", text: "\(peerID.displayName) joined the mesh", date: Date(), isSystem: true))
                     self.flashToast("\(peerID.displayName) joined the mesh")
                     Self.haptic()
-                    SharedStore.saveConnectedPeers(self.connectedPeers)
+                    self.publishWidgetState()
                 }
                 self.flushOutbox()
                 self.note("Connected: \(peerID.displayName)")
                 self.syncLiveActivity()
             case .notConnected:
+                let wasConnected = self.connectedPeers.contains(peerID.displayName)
                 self.peerIDsByName.removeValue(forKey: peerID.displayName)
                 self.connectedPeers.removeAll { $0 == peerID.displayName }
-                self.emergencyBuddies.remove(peerID.displayName)
-                self.receivedMessages.append(MeshMessage(sender: "", text: "\(peerID.displayName) left the mesh", date: Date(), isSystem: true))
+                if wasConnected { self.receivedMessages.append(MeshMessage(sender: "", text: "\(peerID.displayName) left the mesh", date: Date(), isSystem: true)) }
                 self.note("Disconnected: \(peerID.displayName)")
                 if self.voice.activePeer == peerID.displayName { self.voice.endCall() }
-                SharedStore.saveConnectedPeers(self.connectedPeers)
+                self.publishWidgetState()
                 self.syncLiveActivity()
+                self.scheduleRediscovery()
             case .connecting:
                 self.note("Connecting to \(peerID.displayName)…")
             @unknown default:
@@ -441,7 +519,13 @@ extension MeshConnectivityManager: MCSessionDelegate {
 extension MeshConnectivityManager: MCNearbyServiceAdvertiserDelegate {
 
     nonisolated func advertiser(_ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID, withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void) {
+        let theirGroup = context.flatMap { String(data: $0, encoding: .utf8) } ?? ""
         Task { @MainActor in
+            guard theirGroup == self.groupCode else {
+                self.note("Invitation from \(peerID.displayName) ignored (different group)")
+                invitationHandler(false, nil)
+                return
+            }
             self.note("Invitation from \(peerID.displayName) → accepting")
             invitationHandler(true, self.session)
         }
@@ -470,7 +554,7 @@ extension MeshConnectivityManager: MCNearbyServiceBrowserDelegate {
                 return
             }
             self.note("Inviting \(peerID.displayName)…")
-            browser.invitePeer(peerID, to: self.session, withContext: nil, timeout: 30)
+            browser.invitePeer(peerID, to: self.session, withContext: Data(self.groupCode.utf8), timeout: 30)
         }
     }
 
@@ -508,9 +592,9 @@ extension MeshConnectivityManager: CLLocationManagerDelegate {
         Task { @MainActor in
             self.lastKnownCoordinate = location.coordinate
             if self.isPanicBroadcasting {
-                self.broadcastMyLocation(location.coordinate, emergency: true)
+                self.broadcastMyLocation(location.coordinate)
             } else if self.compassActive {
-                self.broadcastMyLocation(location.coordinate, emergency: false)
+                self.broadcastMyLocation(location.coordinate)
             }
         }
     }

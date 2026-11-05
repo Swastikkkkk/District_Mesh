@@ -178,6 +178,7 @@ nonisolated final class AudioBridge: NSObject, StreamDelegate, @unchecked Sendab
 
     /// Name used for the voice audio stream on the `MCSession`.
     static let streamName = "district-voice"
+    private static let maxFrameBytes: UInt32 = 256 * 1024
 
     private let peerID: MCPeerID
     private weak var session: MCSession?
@@ -314,7 +315,7 @@ nonisolated final class AudioBridge: NSObject, StreamDelegate, @unchecked Sendab
             // `.voiceChat` reliably produces audio and does echo cancellation; we
             // amplify in software for loudness and force the loudspeaker route.
             try audioSession.setCategory(.playAndRecord, mode: .voiceChat,
-                                         options: [.allowBluetooth, .defaultToSpeaker])
+                                         options: [.allowBluetoothHFP, .defaultToSpeaker])
             try audioSession.setActive(true)
             try audioSession.overrideOutputAudioPort(speaker ? .speaker : .none)
             callLog.info("audio session active (speaker=\(self.speaker, privacy: .public))")
@@ -441,6 +442,8 @@ nonisolated final class AudioBridge: NSObject, StreamDelegate, @unchecked Sendab
     private func drainFrames() {
         while inbound.count >= 4 {
             let length = inbound.prefix(4).reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
+            // A corrupt header would otherwise make us buffer forever.
+            guard length <= Self.maxFrameBytes else { inbound.removeAll(); break }
             let total = 4 + Int(length)
             guard inbound.count >= total else { break }
 
@@ -489,6 +492,7 @@ nonisolated final class VideoBridge: NSObject, AVCaptureVideoDataOutputSampleBuf
 
     /// Name used for the video stream on the `MCSession`.
     static let streamName = "district-video"
+    private static let maxFrameBytes: UInt32 = 2 * 1024 * 1024
 
     private let peerID: MCPeerID?
     private weak var session: MCSession?
@@ -767,6 +771,8 @@ nonisolated final class VideoBridge: NSObject, AVCaptureVideoDataOutputSampleBuf
     private func drainFrames() {
         while inbound.count >= 4 {
             let length = inbound.prefix(4).reduce(UInt32(0)) { ($0 << 8) | UInt32($1) }
+            // A corrupt header would otherwise make us buffer forever.
+            guard length <= Self.maxFrameBytes else { inbound.removeAll(); break }
             let total = 4 + Int(length)
             guard inbound.count >= total else { break }
 
