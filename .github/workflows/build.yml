@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XC=$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i ios
+
+      - name: Relay simulation (multi-hop, dedup, TTL)
+        if: hashFiles('Tests/RelaySimulation.swift') != ''
+        run: |
+          xcrun swiftc -O DistrictMesh/Models/MeshRelayPacket.swift Tests/RelaySimulation.swift -o relay-sim
+          ./relay-sim
+
+      - name: Build for iPhone (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -project DistrictMesh.xcodeproj -scheme DistrictMesh -configuration Debug \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build.log | grep -E "error:|warning: .*deprecated|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
