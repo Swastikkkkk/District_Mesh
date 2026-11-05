@@ -3,8 +3,7 @@
 #
 #   Alice <-> Bob   group "ci"; then Bob relaunches in group "other" and must not reconnect.
 #
-# Checks: discovery + encrypted session, chat both ways, SOS via the
-# districtmesh://sos deep link, group isolation. Two simulators is what a free
+# Checks: discovery + encrypted session, chat both ways, SOS flood, group isolation. Two simulators is what a free
 # GitHub runner can hold; multi-hop routing is covered by Tests/RelaySimulation,
 # which runs the same MeshRouter code.
 set -uo pipefail
@@ -48,16 +47,18 @@ sleep 3
 launch() { # name group only [send]
   local args=(-district.onboarded YES -district.walkthroughDone YES -district.displayName "$1" -district.groupCode "$2" -meshTestOnly "$3")
   if [ -n "${4:-}" ]; then args+=(-meshTestSend "$4"); fi
+  if [ -n "${5:-}" ]; then args+=(-meshTestSOS YES); fi
   t 300 xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}" && return 0
   echo "launch of $1 timed out, retrying"
   t 300 xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}" || echo "launch of $1 FAILED"
 }
 launch Bob   ci Alice "hi from bob"
-launch Alice ci Bob   "hello from alice"
+launch Alice ci Bob   "hello from alice" sos
 
 echo "waiting for mesh + messages..."; sleep 60
-t 180 xcrun simctl openurl "$(udid Alice)" districtmesh://sos
-echo "SOS sent, waiting..."; sleep 25
+# SOS fires from Alice right after her chat messages (simctl openurl would
+# stop on a system "Open in District?" prompt that real taps don't show).
+echo "waiting for SOS..."; sleep 25
 for n in $NAMES; do t 30 xcrun simctl io "$(udid $n)" screenshot "$OUT/$n.png" >/dev/null 2>&1 || true; done
 
 echo "group isolation: relaunching Bob in group 'other'"
@@ -76,7 +77,8 @@ check is  Bob       "Connected: Alice"              "Bob connects to Alice"
 check is  Alice     "Connected: Bob"                "Alice connects to Bob"
 check is  Bob       "Message from Alice via Alice"  "Bob receives Alice's chat"
 check is  Alice     "Message from Bob via Bob"      "Alice receives Bob's chat"
-check is  Bob       "SOS from Alice"                "Bob gets Alice's SOS (deep link + location flood)"
+check is  Alice     "SOS started"                   "Alice starts SOS"
+check is  Bob       "SOS from Alice"                "Bob gets Alice's SOS location flood"
 check not Bob-other "Connected:"                    "Different group never connects"
 
 for f in Alice Bob Bob-other; do echo "--- $f"; grep -vE "^Filtering|^Timestamp" "$OUT/$f.log" | tail -15; done

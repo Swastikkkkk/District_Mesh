@@ -285,6 +285,7 @@ final class MeshConnectivityManager: NSObject {
         guard !isPanicBroadcasting else { return }
         if isLocationDenied { flashToast("Turn on Location in Settings to share"); return }
         isPanicBroadcasting = true
+        note("SOS started")
         flashToast("Sharing your live location")
         syncLiveActivity()
         locationManager.requestAlwaysAuthorization()
@@ -309,6 +310,7 @@ final class MeshConnectivityManager: NSObject {
     func stopPanicMode() {
         guard isPanicBroadcasting else { return }
         isPanicBroadcasting = false
+        note("SOS stopped")
         // One last packet without the SOS flag so buddies see the all-clear.
         if let coord = lastKnownCoordinate { broadcastMyLocation(coord) }
         flashToast("Stopped sharing location")
@@ -485,12 +487,20 @@ extension MeshConnectivityManager {
 
     fileprivate func startTestSenderIfNeeded() {
         #if DEBUG
-        guard let text = UserDefaults.standard.string(forKey: "meshTestSend"), !Self.testSending else { return }
+        guard !Self.testSending else { return }
         Self.testSending = true
+        let text = UserDefaults.standard.string(forKey: "meshTestSend")
+        let sos = UserDefaults.standard.bool(forKey: "meshTestSOS")
         Task { [weak self] in
-            for i in 1...6 {
-                try? await Task.sleep(for: .seconds(8))
-                self?.sendMessage("\(text) \(i)")
+            if let text {
+                for i in 1...6 {
+                    try? await Task.sleep(for: .seconds(8))
+                    self?.sendMessage("\(text) \(i)")
+                }
+            }
+            if sos {
+                try? await Task.sleep(for: .seconds(5))
+                self?.startPanicMode()
             }
         }
         #endif
