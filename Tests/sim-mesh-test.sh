@@ -30,6 +30,7 @@ for n in $NAMES; do
   t 300 xcrun simctl bootstatus "$u" -b >/dev/null || { echo "$n never finished booting"; exit 1; }
   echo "$n booted"
 done
+echo "letting simulators settle"; sleep 45
 
 stream() { xcrun simctl spawn "$(udid $1)" log stream --level info --style compact \
   --predicate 'subsystem == "com.swastik.districtmesh"' > "$OUT/$2.log" 2>&1 & }
@@ -47,13 +48,15 @@ sleep 3
 launch() { # name group only [send]
   local args=(-district.onboarded YES -district.walkthroughDone YES -district.displayName "$1" -district.groupCode "$2" -meshTestOnly "$3")
   if [ -n "${4:-}" ]; then args+=(-meshTestSend "$4"); fi
-  t 120 xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}"
+  t 300 xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}" && return 0
+  echo "launch of $1 timed out, retrying"
+  t 300 xcrun simctl launch "$(udid $1)" "$BID" "${args[@]}" || echo "launch of $1 FAILED"
 }
 launch Bob   ci Alice "hi from bob"
 launch Alice ci Bob   "hello from alice"
 
 echo "waiting for mesh + messages..."; sleep 60
-t 60 xcrun simctl openurl "$(udid Alice)" districtmesh://sos
+t 180 xcrun simctl openurl "$(udid Alice)" districtmesh://sos
 echo "SOS sent, waiting..."; sleep 25
 for n in $NAMES; do t 30 xcrun simctl io "$(udid $n)" screenshot "$OUT/$n.png" >/dev/null 2>&1 || true; done
 

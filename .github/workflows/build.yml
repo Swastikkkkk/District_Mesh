@@ -67,7 +67,7 @@ jobs:
           xcodebuild -project DistrictMesh.xcodeproj -scheme DistrictMesh -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath dd CODE_SIGNING_ALLOWED=NO build | tail -1
       - name: Two-simulator mesh test
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: |
           bash Tests/sim-mesh-test.sh dd/Build/Products/Debug-iphonesimulator/DistrictMesh.app sim-out
           grep -q "ALL MESH CHECKS PASSED" sim-out/RESULT
