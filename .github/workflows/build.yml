@@ -21,9 +21,9 @@ jobs:
           xcodebuild -showsdks | grep -i ios
 
       - name: Relay simulation (multi-hop, dedup, TTL)
-        if: hashFiles('Tests/RelaySimulation.swift') != ''
+        if: hashFiles('Tests/RelaySimulation/main.swift') != ''
         run: |
-          xcrun swiftc -O DistrictMesh/Models/MeshRelayPacket.swift Tests/RelaySimulation.swift -o relay-sim
+          xcrun swiftc -O DistrictMesh/Models/MeshRelayPacket.swift Tests/RelaySimulation/main.swift -o relay-sim
           ./relay-sim
 
       - name: Build for iPhone (unsigned)

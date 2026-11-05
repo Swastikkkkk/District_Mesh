@@ -85,7 +85,7 @@ struct SeenPacketCache {
 /// The relay decision every phone makes for every packet it sees.
 ///
 /// Kept free of MultipeerConnectivity so the flooding behaviour can be tested
-/// on its own (see `Tests/RelaySimulation.swift`).
+/// on its own (see `Tests/RelaySimulation/main.swift`).
 struct MeshRouter {
     enum Decision: Equatable {
         /// Already seen. Ignore it and do not forward.
