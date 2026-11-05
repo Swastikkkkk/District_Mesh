@@ -8,7 +8,7 @@ import Foundation
 /// directly connected to the original sender (multi-hop). `id` stays constant
 /// across every hop and is used for de-duplication so a packet looping around
 /// the mesh is only processed once.
-struct MeshRelayPacket: Codable, Identifiable, Sendable {
+nonisolated struct MeshRelayPacket: Codable, Identifiable, Sendable {
 
     enum Kind: String, Codable, Sendable {
         case message
@@ -61,7 +61,7 @@ struct MeshRelayPacket: Codable, Identifiable, Sendable {
 
 /// Tracks recently seen packet ids so a packet circulating the mesh is only
 /// delivered/relayed once. Bounded so memory stays flat during long sessions.
-struct SeenPacketCache {
+nonisolated struct SeenPacketCache {
     private var ids: Set<UUID> = []
     private var order: [UUID] = []
     private let limit: Int
@@ -86,7 +86,7 @@ struct SeenPacketCache {
 ///
 /// Kept free of MultipeerConnectivity so the flooding behaviour can be tested
 /// on its own (see `Tests/RelaySimulation/main.swift`).
-struct MeshRouter {
+nonisolated struct MeshRouter {
     enum Decision: Equatable {
         /// Already seen. Ignore it and do not forward.
         case drop

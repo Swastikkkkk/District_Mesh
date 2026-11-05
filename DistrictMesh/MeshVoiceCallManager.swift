@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import AVFoundation
+@preconcurrency import AVFoundation
 import CoreImage
 import CoreGraphics
 import ImageIO
@@ -9,7 +9,7 @@ import os
 
 /// Shared logger for the call pipeline. View live with:
 /// `log stream --predicate 'subsystem == "com.swastik.districtmesh"'`
-let callLog = Logger(subsystem: "com.swastik.districtmesh", category: "call")
+nonisolated let callLog = Logger(subsystem: "com.swastik.districtmesh", category: "call")
 
 /// Offline voice calls that ride over the same `MCSession` as the mesh.
 ///

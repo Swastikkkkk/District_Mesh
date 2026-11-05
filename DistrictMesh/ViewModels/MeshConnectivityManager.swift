@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import MultipeerConnectivity
+@preconcurrency import MultipeerConnectivity
 import CoreLocation
 import UIKit
 import ActivityKit
