@@ -9,8 +9,16 @@ import { REPO, asset } from "@/lib/site"
 export function Hero() {
   const root = useRef<HTMLDivElement>(null)
   useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
     gsap.from(".hero-fade", { y: 18, opacity: 0, duration: 0.9, ease: "power3.out", stagger: 0.12, delay: 0.5 })
     gsap.from(".hero-phone", { y: 60, opacity: 0, duration: 1.4, ease: "expo.out", delay: 0.3 })
+    gsap.to(".hero-phone", {
+      yPercent: -8,
+      rotate: 2,
+      ease: "none",
+      scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: 1.4 },
+    })
     gsap.utils.toArray<HTMLElement>(".ring").forEach((el, i) => {
       gsap.fromTo(el, { scale: 0.55, opacity: 0.5 }, { scale: 1.5, opacity: 0, duration: 4.5, ease: "none", repeat: -1, delay: i * 1.5 })
     })

@@ -18,8 +18,28 @@ gsap.registerPlugin(ScrollTrigger)
 export default function App() {
   const root = useRef<HTMLDivElement>(null)
   useGSAP(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (reduceMotion) return
+
     gsap.utils.toArray<HTMLElement>(".reveal").forEach(el => {
-      gsap.from(el, { y: 28, opacity: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 88%", once: true } })
+      gsap.fromTo(el,
+        { y: 34, opacity: 0, rotateX: 4, transformOrigin: "center bottom" },
+        { y: 0, opacity: 1, rotateX: 0, duration: 0.9, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 88%", once: true } },
+      )
+    })
+
+    gsap.utils.toArray<HTMLElement>(".section-heading").forEach(heading => {
+      gsap.fromTo(heading,
+        { y: 24, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, ease: "power3.out", scrollTrigger: { trigger: heading, start: "top 84%", once: true } },
+      )
+    })
+
+    gsap.utils.toArray<HTMLElement>(".section-content").forEach(content => {
+      gsap.fromTo(content,
+        { y: 18 },
+        { y: 0, ease: "none", scrollTrigger: { trigger: content, start: "top bottom", end: "top 40%", scrub: 1.2 } },
+      )
     })
   }, { scope: root })
 
