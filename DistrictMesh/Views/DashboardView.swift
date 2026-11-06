@@ -19,7 +19,7 @@ struct DashboardView: View {
         for tab in seq.split(separator: ",").compactMap({ Int($0) }) {
             selectedTab = tab
             mesh.note("SHOT tab \(tab)")
-            try? await Task.sleep(for: .seconds(8))
+            try? await Task.sleep(for: .seconds(16))
         }
         #endif
     }

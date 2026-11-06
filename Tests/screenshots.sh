@@ -38,12 +38,14 @@ t 300 xcrun simctl launch "$A" "$BID" "${common[@]}" -district.displayName Riya 
   -meshTestScriptDelay 4 -meshTestScript "we're at the main stage|wait, where are you?" \
   -meshTestTabs 0,1,2 -meshTestTabsAfterSOS YES
 
-shot_on() { # log pattern, device, file
-  for i in $(seq 1 180); do grep -q "$1" "$OUT/riya.log" && break; sleep 1; done
+seen() { xcrun simctl spawn "$A" log show --last 5m --style compact \
+  --predicate "subsystem == \"com.swastik.districtmesh\" AND eventMessage CONTAINS \"$1\"" 2>/dev/null | grep -q "$1"; }
+shot_on() { # marker, device, file
+  for i in $(seq 1 120); do seen "$1" && break; sleep 2; done
   sleep 3; t 30 xcrun simctl io "$2" screenshot "$OUT/$3.png"; echo "shot $3"
 }
 shot_on "SHOT tab 0" "$A" home
-t 30 xcrun simctl io "$B" screenshot "$OUT/sos.png"; echo "shot sos"
+t 30 xcrun simctl io "$B" screenshot "$OUT/kabir-home.png"; echo "shot kabir-home"
 shot_on "SHOT tab 1" "$A" chat
 shot_on "SHOT tab 2" "$A" map
 
