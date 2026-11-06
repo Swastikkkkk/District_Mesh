@@ -69,7 +69,7 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             Image(systemName: "dot.radiowaves.left.and.right")
                 .font(.system(size: 72, weight: .semibold))
-            Text("District Mesh")
+            Text("NoBars")
                 .font(.largeTitle.bold())
             Text("Like AirDrop \u{2014} but for chat, calls & location.\nWorks with no Wi-Fi network, no cell, no internet.")
                 .font(.title3)
@@ -129,7 +129,7 @@ struct OnboardingView: View {
                     .foregroundStyle(.white)
             }
             VStack(spacing: 6) {
-                Text("**Leave blank** — connects to any District device nearby.")
+                Text("**Leave blank** — connects to any NoBars device nearby.")
                     .font(.footnote).foregroundStyle(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
                 Text("**Enter a code** — only phones with the same code can join. Share it with your crew.")

@@ -383,7 +383,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DistrictMesh/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = District;
+				INFOPLIST_KEY_CFBundleDisplayName = NoBars;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used for offline video calls with nearby buddies over the mesh.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "This app uses local networking to connect nearby devices without internet.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Guardian mode keeps sharing your location with your crew over the mesh even when the screen is locked, so you can be found if your phone is lost or stolen.";
@@ -435,7 +435,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DistrictMesh/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = District;
+				INFOPLIST_KEY_CFBundleDisplayName = NoBars;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Used for offline video calls with nearby buddies over the mesh.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "This app uses local networking to connect nearby devices without internet.";
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "Guardian mode keeps sharing your location with your crew over the mesh even when the screen is locked, so you can be found if your phone is lost or stolen.";
@@ -485,7 +485,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				CODE_SIGN_ENTITLEMENTS = Widget/Widget.entitlements;
 				INFOPLIST_FILE = Widget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Widget;
+				INFOPLIST_KEY_CFBundleDisplayName = NoBars;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -518,7 +518,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				CODE_SIGN_ENTITLEMENTS = Widget/Widget.entitlements;
 				INFOPLIST_FILE = Widget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Widget;
+				INFOPLIST_KEY_CFBundleDisplayName = NoBars;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

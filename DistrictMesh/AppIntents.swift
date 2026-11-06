@@ -1,9 +1,9 @@
 import AppIntents
 
-/// "Hey Siri, go live on District Mesh": opens the app and starts the mesh.
+/// "Hey Siri, go live on NoBars": opens the app and starts the mesh.
 nonisolated struct GoLiveIntent: AppIntent {
     static let title: LocalizedStringResource = "Go Live on Mesh"
-    static let description = IntentDescription("Opens District Mesh and starts finding nearby buddies.")
+    static let description = IntentDescription("Opens NoBars and starts finding nearby buddies.")
     static let openAppWhenRun = true
 
     @MainActor
@@ -15,7 +15,7 @@ nonisolated struct GoLiveIntent: AppIntent {
     }
 }
 
-/// "Hey Siri, send SOS on District Mesh": floods your location to the group.
+/// "Hey Siri, send SOS on NoBars": floods your location to the group.
 nonisolated struct SendSOSIntent: AppIntent {
     static let title: LocalizedStringResource = "Send SOS"
     static let description = IntentDescription("Shares your live location with everyone on your mesh until you stop it.")
@@ -23,7 +23,7 @@ nonisolated struct SendSOSIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        MeshConnectivityManager.shared.handle(url: URL(string: "districtmesh://sos")!)
+        MeshConnectivityManager.shared.handle(url: URL(string: "nobars://sos")!)
         return .result(dialog: "Sharing your location with your mesh.")
     }
 }

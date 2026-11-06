@@ -76,3 +76,25 @@ jobs:
         with:
           name: simulator-mesh
           path: sim-out
+
+  screenshots:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_*.app | grep -vi beta | sort -V | tail -1)"
+      - name: Build for simulator (Debug)
+        run: |
+          set -o pipefail
+          xcodebuild -project DistrictMesh.xcodeproj -scheme DistrictMesh -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath dd CODE_SIGNING_ALLOWED=NO build | tail -1
+      - name: Capture screenshots
+        timeout-minutes: 25
+        run: bash Tests/screenshots.sh dd/Build/Products/Debug-iphonesimulator/DistrictMesh.app shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots

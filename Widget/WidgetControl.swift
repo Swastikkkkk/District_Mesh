@@ -8,11 +8,11 @@ struct WidgetControl: ControlWidget {
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: Self.kind) {
-            ControlWidgetButton(action: OpenURLIntent(URL(string: "districtmesh://sos")!)) {
+            ControlWidgetButton(action: OpenURLIntent(URL(string: "nobars://sos")!)) {
                 Label("Mesh SOS", systemImage: "location.fill")
             }
         }
         .displayName("Mesh SOS")
-        .description("Opens District Mesh and shares your live location with your group.")
+        .description("Opens NoBars and shares your live location with your group.")
     }
 }

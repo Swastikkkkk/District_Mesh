@@ -108,7 +108,7 @@ struct WalkthroughView: View {
                 withAnimation { index += 1 }
             }
         } label: {
-            Text(index >= pages.count - 1 ? "Start using District" : "Next")
+            Text(index >= pages.count - 1 ? "Start using NoBars" : "Next")
         }
         .buttonStyle(DistrictButtonStyle(
             tint: LinearGradient(colors: [.white], startPoint: .top, endPoint: .bottom),

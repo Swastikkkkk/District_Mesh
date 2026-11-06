@@ -40,7 +40,7 @@ final class MeshConnectivityManager: NSObject {
 
     // MARK: MPC internals
 
-    private static let serviceType = "district-mesh"
+    private static let serviceType = "nobars-mesh"
     static let nameKey = "district.displayName"
     static let groupKey = "district.groupCode"
 
@@ -90,7 +90,7 @@ final class MeshConnectivityManager: NSObject {
         voice.attach(session: session)
     }
 
-    private func note(_ message: String) {
+    func note(_ message: String) {
         log.notice("\(message, privacy: .public)")
         statusLog.append(message)
         if statusLog.count > 40 { statusLog.removeFirst(statusLog.count - 40) }
@@ -150,7 +150,7 @@ final class MeshConnectivityManager: NSObject {
 
     func testLiveActivity() {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            flashToast("Live Activities disabled — go to Settings \u{2192} DistrictMesh \u{2192} Live Activities")
+            flashToast("Live Activities disabled — go to Settings \u{2192} NoBars \u{2192} Live Activities")
             return
         }
         syncLiveActivity()
@@ -444,10 +444,10 @@ final class MeshConnectivityManager: NSObject {
         }
     }
 
-    /// `districtmesh://sos` starts panic mode (used by the Control Center
-    /// button and the SOS shortcut). `districtmesh://open` just opens the app.
+    /// `nobars://sos` starts panic mode (used by the Control Center
+    /// button and the SOS shortcut). `nobars://open` just opens the app.
     func handle(url: URL) {
-        guard url.scheme == "districtmesh" else { return }
+        guard url.scheme == "nobars" else { return }
         if !isLive { startHosting(); startBrowsing() }
         if url.host == "sos" { startPanicMode() }
     }
@@ -490,12 +490,21 @@ extension MeshConnectivityManager {
         guard !Self.testSending else { return }
         Self.testSending = true
         let text = UserDefaults.standard.string(forKey: "meshTestSend")
+        let script = UserDefaults.standard.string(forKey: "meshTestScript")
         let sos = UserDefaults.standard.bool(forKey: "meshTestSOS")
         Task { [weak self] in
             if let text {
                 for i in 1...6 {
                     try? await Task.sleep(for: .seconds(8))
                     self?.sendMessage("\(text) \(i)")
+                }
+            }
+            if let script {
+                let delay = UserDefaults.standard.double(forKey: "meshTestScriptDelay")
+                if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
+                for line in script.split(separator: "|") {
+                    try? await Task.sleep(for: .seconds(6))
+                    self?.sendMessage(String(line))
                 }
             }
             if sos {

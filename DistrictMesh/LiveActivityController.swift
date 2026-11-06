@@ -56,7 +56,7 @@ final class LiveActivityController {
                 await activity.update(.init(state: state, staleDate: nil))
             }
         } else {
-            let attrs = DistrictWidgetsAttributes(group: group.isEmpty ? "District" : group)
+            let attrs = DistrictWidgetsAttributes(group: group.isEmpty ? "NoBars" : group)
             do {
                 activity = try Activity.request(
                     attributes: attrs,

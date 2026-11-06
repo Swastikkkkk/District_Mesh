@@ -101,7 +101,7 @@ struct SplashView: View {
                 .frame(width: 290, height: 290)
 
                 VStack(spacing: 10) {
-                    Text("District Mesh")
+                    Text("NoBars")
                         .font(.system(size: 36, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     Text("Connect offline, together")

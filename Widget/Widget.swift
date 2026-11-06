@@ -50,7 +50,7 @@ struct MeshWidgetView: View {
             HStack(spacing: 6) {
                 Image(systemName: entry.emergencies.isEmpty ? "dot.radiowaves.left.and.right" : "exclamationmark.triangle.fill")
                     .foregroundStyle(entry.emergencies.isEmpty ? accent : .red)
-                Text("District Mesh").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                Text("NoBars").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             }
 
             if let sos = entry.emergencies.first {
@@ -72,7 +72,7 @@ struct MeshWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: "districtmesh://open"))
+        .widgetURL(URL(string: "nobars://open"))
     }
 }
 

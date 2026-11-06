@@ -9,17 +9,17 @@
 			<string>com.swastik.districtmesh</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>districtmesh</string>
+				<string>nobars</string>
 			</array>
 		</dict>
 	</array>
 	<key>NSBonjourServices</key>
 	<array>
-		<string>_district-mesh._tcp</string>
-		<string>_district-mesh._udp</string>
+		<string>_nobars-mesh._tcp</string>
+		<string>_nobars-mesh._udp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>District Mesh needs Local Network access to discover and connect to nearby phones over Wi-Fi and Bluetooth, no internet required.</string>
+	<string>NoBars needs Local Network access to discover and connect to nearby phones over Wi-Fi and Bluetooth, no internet required.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

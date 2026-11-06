@@ -41,7 +41,7 @@ struct WidgetLiveActivity: Widget {
                         Text(context.state.isSharingLocation ? "Sharing location" : "Live on mesh")
                             .font(.caption.weight(.bold))
                             .foregroundStyle(accent)
-                        if context.attributes.group != "District" {
+                        if context.attributes.group != "NoBars" {
                             Text("·")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -98,7 +98,7 @@ struct WidgetLiveActivity: Widget {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.white)
                             .lineLimit(1)
-                        if context.attributes.group != "District" {
+                        if context.attributes.group != "NoBars" {
                             Text("#\(context.attributes.group)")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)

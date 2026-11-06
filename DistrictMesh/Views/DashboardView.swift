@@ -7,6 +7,23 @@ struct DashboardView: View {
     @State private var showSettings = false
     @State private var unread = 0
 
+    /// Debug-only: steps through tabs for CI screenshots (`-meshTestTabs 0,1,2`).
+    private func runScreenshotTour() async {
+        #if DEBUG
+        guard let seq = UserDefaults.standard.string(forKey: "meshTestTabs") else { return }
+        let waitForSOS = UserDefaults.standard.bool(forKey: "meshTestTabsAfterSOS")
+        while mesh.connectedPeers.isEmpty || (waitForSOS && mesh.emergencyBuddies.isEmpty) {
+            try? await Task.sleep(for: .seconds(1))
+        }
+        try? await Task.sleep(for: .seconds(5))
+        for tab in seq.split(separator: ",").compactMap({ Int($0) }) {
+            selectedTab = tab
+            mesh.note("SHOT tab \(tab)")
+            try? await Task.sleep(for: .seconds(8))
+        }
+        #endif
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             HomeTab(mesh: mesh, showSettings: $showSettings, selectedTab: $selectedTab)
@@ -24,6 +41,7 @@ struct DashboardView: View {
         }
         .tint(DistrictTheme.accent)
         .onAppear { applyTabBarStyle() }
+        .task { await runScreenshotTour() }
         .onChange(of: selectedTab) { _, tab in if tab == 1 { unread = 0 } }
         .onChange(of: mesh.receivedMessages.count) {
             if selectedTab != 1,
@@ -103,7 +121,7 @@ private struct HomeTab: View {
                     }
                 }
                 ToolbarItem(placement: .principal) {
-                    Text(mesh.groupCode.isEmpty ? "District" : "#\(mesh.groupCode)")
+                    Text(mesh.groupCode.isEmpty ? "NoBars" : "#\(mesh.groupCode)")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.45))
                 }
@@ -301,8 +319,8 @@ private struct HomeTab: View {
 
     private var inviteText: String {
         mesh.groupCode.isEmpty
-            ? "Join my District mesh! Download the app, go live, and we'll connect automatically nearby. No internet needed."
-            : "Join my District mesh! Download District, open the app, and enter group code \"\(mesh.groupCode)\". No internet needed."
+            ? "Join my NoBars mesh! Download the app, go live, and we'll connect automatically nearby. No internet needed."
+            : "Join my NoBars mesh! Download NoBars, open the app, and enter group code \"\(mesh.groupCode)\". No internet needed."
     }
 
     // MARK: Error banner
@@ -914,8 +932,8 @@ private struct SettingsView: View {
     private var groupLabel: String { group.trimmingCharacters(in: .whitespaces) }
     private var shareText: String {
         groupLabel.isEmpty
-            ? "Join my District mesh! Download the app and go live — we'll connect nearby automatically. No internet needed."
-            : "Join my District mesh! Download District, open the app, and enter group code \"\(groupLabel)\". No internet needed."
+            ? "Join my NoBars mesh! Download the app and go live — we'll connect nearby automatically. No internet needed."
+            : "Join my NoBars mesh! Download NoBars, open the app, and enter group code \"\(groupLabel)\". No internet needed."
     }
 
     var body: some View {
@@ -945,7 +963,7 @@ private struct SettingsView: View {
                         Label("Share invite", systemImage: "square.and.arrow.up")
                     }
                     Text(mesh.groupCode.isEmpty
-                         ? "You're on an open mesh — any nearby District phone can find you."
+                         ? "You're on an open mesh — any nearby NoBars phone can find you."
                          : "Only phones with code \"\(mesh.groupCode)\" can join your mesh.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
