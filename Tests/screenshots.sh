@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Captures real screenshots of the app for the website, on two simulators
-# meshed together (Riya and Kabir at a festival, Kabir sends SOS).
+# meshed together (Arjun and Kabir at a festival, Kabir sends SOS).
 set -uo pipefail
 APP="$1"; OUT="${2:-shots}"; BID=com.swastik.districtmesh
 mkdir -p "$OUT"
@@ -27,14 +27,14 @@ for u in $A $B; do
 done
 xcrun simctl location "$A" set 28.47440,77.50400
 xcrun simctl location "$B" set 28.47520,77.50510
-xcrun simctl spawn "$A" log stream --style compact --predicate 'subsystem == "com.swastik.districtmesh"' > "$OUT/riya.log" 2>&1 &
+xcrun simctl spawn "$A" log stream --style compact --predicate 'subsystem == "com.swastik.districtmesh"' > "$OUT/arjun.log" 2>&1 &
 xcrun simctl spawn "$B" log stream --style compact --predicate 'subsystem == "com.swastik.districtmesh"' > "$OUT/kabir.log" 2>&1 &
 sleep 3
 
 common=(-district.onboarded YES -district.walkthroughDone YES -district.groupCode fest24)
-t 300 xcrun simctl launch "$B" "$BID" "${common[@]}" -district.displayName Kabir -meshTestOnly Riya \
+t 300 xcrun simctl launch "$B" "$BID" "${common[@]}" -district.displayName Kabir -meshTestOnly Arjun \
   -meshTestScript "lost you guys near the food stalls|no signal at all here lol|ok sharing my location" -meshTestSOS YES
-t 300 xcrun simctl launch "$A" "$BID" "${common[@]}" -district.displayName Riya -meshTestOnly Kabir \
+t 300 xcrun simctl launch "$A" "$BID" "${common[@]}" -district.displayName Arjun -meshTestOnly Kabir \
   -meshTestScriptDelay 4 -meshTestScript "we're at the main stage|wait, where are you?" \
   -meshTestTabs 0,1,2 -meshTestTabsAfterSOS YES
 

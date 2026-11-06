@@ -23,7 +23,7 @@ struct MeshEntry: TimelineEntry {
 
 struct MeshProvider: TimelineProvider {
     func placeholder(in context: Context) -> MeshEntry {
-        MeshEntry(date: .now, peers: ["Riya", "Kabir"], emergencies: [], updatedAt: .now)
+        MeshEntry(date: .now, peers: ["Arjun", "Kabir"], emergencies: [], updatedAt: .now)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (MeshEntry) -> Void) {
@@ -93,6 +93,6 @@ struct DistrictWidget: Widget {
 #Preview(as: .systemSmall) {
     DistrictWidget()
 } timeline: {
-    MeshEntry(date: .now, peers: ["Riya", "Kabir", "Aman"], emergencies: [], updatedAt: .now)
-    MeshEntry(date: .now, peers: ["Riya"], emergencies: ["Riya"], updatedAt: .now)
+    MeshEntry(date: .now, peers: ["Arjun", "Kabir", "Aman"], emergencies: [], updatedAt: .now)
+    MeshEntry(date: .now, peers: ["Arjun"], emergencies: ["Arjun"], updatedAt: .now)
 }

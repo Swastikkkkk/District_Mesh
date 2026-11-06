@@ -5,7 +5,7 @@ import { LuSmartphone } from "react-icons/lu"
 import { Section } from "@/components/Section"
 
 const nodes = [
-  { name: "Riya", x: 8, ttl: "sends" },
+  { name: "Arjun", x: 8, ttl: "sends" },
   { name: "Aman", x: 36, ttl: "ttl 9" },
   { name: "Kabir", x: 64, ttl: "ttl 8" },
   { name: "Zoya", x: 92, ttl: "ttl 7" },
@@ -49,7 +49,7 @@ export function HowItWorks() {
           ))}
         </div>
         <div className="mt-8 grid gap-4 border-t border-line pt-8 text-[15px] text-white/55 sm:grid-cols-3">
-          <p><span className="font-medium text-white">Riya and Zoya are never in range of each other.</span> The message still reaches Zoya through Aman and Kabir.</p>
+          <p><span className="font-medium text-white">Arjun and Zoya are never in range of each other.</span> The message still reaches Zoya through Aman and Kabir.</p>
           <p><span className="font-medium text-white">Each phone delivers a message once.</span> Repeat copies that loop back are ignored.</p>
           <p><span className="font-medium text-white">Up to 10 hops.</span> A hop counter on every message keeps the network quiet.</p>
         </div>

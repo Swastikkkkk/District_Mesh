@@ -87,7 +87,7 @@ do {
 
 // 4. Packet survives the wire format intact, including location + emergency.
 do {
-    let loc = MeshRelayPacket(kind: .location, senderName: "Riya", latitude: 28.47, longitude: 77.50, isEmergency: true)
+    let loc = MeshRelayPacket(kind: .location, senderName: "Arjun", latitude: 28.47, longitude: 77.50, isEmergency: true)
     let back = MeshRelayPacket.decode(from: loc.encoded()!)
     check(back?.id == loc.id && back?.latitude == 28.47 && back?.isEmergency == true, "location + SOS flag round-trip")
     check(MeshRelayPacket.decode(from: Data("garbage".utf8)) == nil, "garbage bytes are rejected, not crashed on")
