@@ -17,7 +17,10 @@ export function Screens() {
   const rail = useRef<HTMLDivElement>(null)
 
   const scrollScreens = (direction: number) => {
-    rail.current?.scrollBy({ left: direction * (rail.current.clientWidth * 0.8), behavior: "smooth" })
+    const firstCard = rail.current?.querySelector<HTMLElement>(".screen-card")
+    if (!rail.current || !firstCard) return
+    const gap = Number.parseFloat(getComputedStyle(rail.current).columnGap) || 0
+    rail.current.scrollBy({ left: direction * (firstCard.offsetWidth + gap), behavior: "smooth" })
   }
 
   return (
@@ -41,23 +44,24 @@ export function Screens() {
             </figure>
           ))}
         </div>
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-28 bg-gradient-to-l from-bg via-bg/70 to-transparent sm:block" />
-        <div className="absolute right-4 top-0 flex items-center gap-2">
+        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-16 bg-gradient-to-r from-bg to-transparent sm:block" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-16 bg-gradient-to-l from-bg to-transparent sm:block" />
+        <div className="absolute inset-x-0 top-[42%] flex -translate-y-1/2 justify-between px-1 sm:px-2">
           <button
             type="button"
             aria-label="Show previous app screen"
             onClick={() => scrollScreens(-1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-bg/90 text-white/70 backdrop-blur transition hover:border-white/25 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-surface/95 text-white/75 shadow-lg shadow-black/30 backdrop-blur transition hover:border-accent/60 hover:bg-surface hover:text-white"
           >
-            <LuArrowLeft className="h-4 w-4" />
+            <LuArrowLeft className="h-5 w-5" />
           </button>
           <button
             type="button"
             aria-label="Show next app screen"
             onClick={() => scrollScreens(1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-bg/90 text-white/70 backdrop-blur transition hover:border-white/25 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-surface/95 text-white/75 shadow-lg shadow-black/30 backdrop-blur transition hover:border-accent/60 hover:bg-surface hover:text-white"
           >
-            <LuArrowRight className="h-4 w-4" />
+            <LuArrowRight className="h-5 w-5" />
           </button>
         </div>
       </div>
