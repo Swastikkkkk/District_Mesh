@@ -1,6 +1,8 @@
-# District Mesh
+# NoBars
 
-[![Build](https://github.com/Swastikkkkk/District_Mesh/actions/workflows/build.yml/badge.svg)](https://github.com/Swastikkkkk/District_Mesh/actions/workflows/build.yml)
+[![Build](https://github.com/Swastikkkkk/NoBars/actions/workflows/build.yml/badge.svg)](https://github.com/Swastikkkkk/NoBars/actions/workflows/build.yml)
+
+**Website:** https://swastikkkkk.github.io/NoBars/
 
 Offline peer-to-peer mesh for iPhone. Phones find each other over Bluetooth and peer-to-peer Wi-Fi, form a mesh, and relay chat, live location and SOS alerts across multiple hops. Voice and video calls run over the same encrypted links.
 
@@ -41,8 +43,8 @@ You need **at least two iPhones on iOS 26 or later**. The simulator has no Bluet
 1. Install **Xcode 26** or newer.
 2. Clone and open:
    ```bash
-   git clone https://github.com/Swastikkkkk/District_Mesh.git
-   cd District_Mesh
+   git clone https://github.com/Swastikkkkk/NoBars.git
+   cd NoBars
    open DistrictMesh.xcodeproj
    ```
 3. Select the **DistrictMesh** target, go to **Signing & Capabilities** and pick your team. Do the same for the **WidgetExtension** target.
@@ -59,7 +61,7 @@ You need **at least two iPhones on iOS 26 or later**. The simulator has no Bluet
 
 Every push builds an unsigned IPA on GitHub Actions.
 
-1. Open the newest green run under [Actions](https://github.com/Swastikkkkk/District_Mesh/actions/workflows/build.yml) (sign in to GitHub), scroll to **Artifacts** and download `DistrictMesh-unsigned-ipa`. Unzip it to get `DistrictMesh-unsigned.ipa`.
+1. Open the newest green run under [Actions](https://github.com/Swastikkkkk/NoBars/actions/workflows/build.yml) (sign in to GitHub), scroll to **Artifacts** and download `NoBars-unsigned-ipa`. Unzip it to get `NoBars-unsigned.ipa`.
 2. Install [Sideloadly](https://sideloadly.io) or AltStore, connect your iPhone, drop in the IPA and sign in with your Apple ID.
 3. On the phone, trust the developer under **Settings > General > VPN & Device Management**.
 
@@ -92,11 +94,11 @@ Settings > Diagnostics shows a live log of discovery, invites and connections if
 
 ## Shortcuts, Siri, widget, Control Center
 
-- **Siri:** "Go live on District" or "Send SOS on District". Both also appear in the Shortcuts app and can be put on the Action button.
+- **Siri:** "Go live on NoBars" or "Send SOS on NoBars". Both also appear in the Shortcuts app and can be put on the Action button.
 - **Control Center:** add the **Mesh SOS** control. One tap opens the app and starts SOS.
 - **Widget:** add **Mesh Status** (small or medium) to see how many buddies are nearby and any active SOS.
 - **Live Activity:** shows your nearest buddy and distance on the Lock Screen and Dynamic Island while the mesh is live.
-- Deep links: `districtmesh://sos` and `districtmesh://open`.
+- Deep links: `nobars://sos` and `nobars://open`.
 
 ## Limits to know
 
@@ -142,8 +144,8 @@ xcrun swiftc DistrictMesh/Models/MeshRelayPacket.swift Tests/RelaySimulation/mai
 
 ## Troubleshooting
 
-- **Phones never find each other:** check Settings > Privacy & Security > Local Network > District is on, both phones use the exact same group code, and Bluetooth is on.
+- **Phones never find each other:** check Settings > Privacy & Security > Local Network > NoBars is on, both phones use the exact same group code, and Bluetooth is on.
 - **"Local Network access is off" banner:** same fix as above, then reopen the app.
-- **No audio in a call:** allow Microphone in Settings > District.
+- **No audio in a call:** allow Microphone in Settings > NoBars.
 - **Widget shows 0 or nothing:** you're on a free team without App Groups, or the app hasn't been opened since install.
-- **Live Activity missing:** Settings > District > Live Activities must be on.
+- **Live Activity missing:** Settings > NoBars > Live Activities must be on.
