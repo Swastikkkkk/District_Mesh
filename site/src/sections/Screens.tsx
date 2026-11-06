@@ -6,6 +6,8 @@ const shots = [
   { file: "onboarding", title: "Meet NoBars", body: "No network, no towers, works in Airplane Mode." },
   { file: "walkthrough", title: "Go live", body: "One tap and your phone starts finding your group." },
   { file: "home", title: "Your crew at a glance", body: "Who's nearby, call buttons and chat in one place." },
+  { file: "chat", title: "Chat with zero bars", body: "Messages travel phone to phone, no network needed." },
+  { file: "sos", title: "SOS alerts", body: "A buddy in trouble gets flagged right on your crew." },
   { file: "map", title: "Find each other", body: "Buddies on the map, SOS in red." },
 ]
 
