@@ -3,12 +3,10 @@ import { Section } from "@/components/Section"
 import { asset } from "@/lib/site"
 
 const shots = [
-  { file: "onboarding", title: "Pick a name and group", body: "Two fields and you're in." },
-  { file: "home", title: "Your crew at a glance", body: "Who's nearby, and chat in one place." },
-  { file: "chat", title: "Chat with no signal", body: "Messages hop through other phones." },
-  { file: "sos", title: "SOS in one tap", body: "Your location goes out to everyone." },
+  { file: "onboarding", title: "Meet NoBars", body: "No network, no towers, works in Airplane Mode." },
+  { file: "walkthrough", title: "Go live", body: "One tap and your phone starts finding your group." },
+  { file: "home", title: "Your crew at a glance", body: "Who's nearby, call buttons and chat in one place." },
   { file: "map", title: "Find each other", body: "Buddies on the map, SOS in red." },
-  { file: "walkthrough", title: "Quick walkthrough", body: "Learn the basics in a few swipes." },
 ]
 
 export function Screens() {
