@@ -5,12 +5,17 @@ set -uo pipefail
 APP="$1"; OUT="${2:-shots}"; BID=com.swastik.districtmesh
 mkdir -p "$OUT"
 t() { local secs=$1; shift; perl -e 'alarm shift; exec @ARGV' "$secs" "$@"; }
-POOL=$(xcrun simctl list devices available | grep -E "^ +iPhone 1[67] Pro \(" | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/' | head -2)
-[ "$(echo "$POOL" | wc -l | tr -d ' ')" = 2 ] || POOL=$(xcrun simctl list devices available | grep -E "^ +iPhone" | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/' | head -2)
+POOL=$(xcrun simctl list devices available | grep -E "^ +iPhone" | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/' | head -2)
 A=$(echo "$POOL" | sed -n 1p); B=$(echo "$POOL" | sed -n 2p)
 for u in $A $B; do
-  t 60 xcrun simctl shutdown "$u" 2>/dev/null
-  t 120 xcrun simctl boot "$u"; t 300 xcrun simctl bootstatus "$u" -b >/dev/null || exit 1
+  ok=0
+  for attempt in 1 2; do
+    t 60 xcrun simctl shutdown "$u" 2>/dev/null
+    t 180 xcrun simctl boot "$u"
+    if t 420 xcrun simctl bootstatus "$u" -b >/dev/null; then ok=1; break; fi
+    echo "boot retry for $u"
+  done
+  [ $ok = 1 ] || { echo "could not boot $u"; exit 1; }
 done
 sleep 40
 for u in $A $B; do
