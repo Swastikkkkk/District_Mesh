@@ -1,4 +1,5 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
+import gsap from "gsap"
 import { Phone } from "@/components/Phone"
 import { Section } from "@/components/Section"
 import { asset } from "@/lib/site"
@@ -15,6 +16,19 @@ const shots = [
 
 export function Screens() {
   const rail = useRef<HTMLDivElement>(null)
+  const hoverDirection = useRef(0)
+
+  useEffect(() => {
+    const tick = () => {
+      const element = rail.current
+      if (!element || hoverDirection.current === 0 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+
+      element.scrollLeft += hoverDirection.current * Math.min(element.clientWidth * 0.012, 10)
+    }
+
+    gsap.ticker.add(tick)
+    return () => gsap.ticker.remove(tick)
+  }, [])
 
   const scrollScreens = (direction: number) => {
     const firstCard = rail.current?.querySelector<HTMLElement>(".screen-card")
@@ -33,6 +47,15 @@ export function Screens() {
           className="screen-rail -mx-5 flex snap-x snap-mandatory gap-6 overflow-x-auto overscroll-x-contain scroll-px-5 px-5 pb-6 touch-pan-x select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 sm:-mx-8 sm:scroll-px-8 sm:px-8"
           role="region"
           tabIndex={0}
+          onPointerMove={event => {
+            if (event.pointerType !== "mouse") return
+            const bounds = event.currentTarget.getBoundingClientRect()
+            const position = (event.clientX - bounds.left) / bounds.width
+            hoverDirection.current = position < 0.2 ? -1 : position > 0.8 ? 1 : 0
+          }}
+          onPointerLeave={() => {
+            hoverDirection.current = 0
+          }}
         >
           {shots.map(s => (
             <figure key={s.file} className="screen-card reveal w-[min(72vw,240px)] shrink-0 snap-start">
