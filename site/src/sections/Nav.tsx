@@ -18,7 +18,7 @@ export function Nav() {
         scrolled ? "border-white/10 bg-[#0d0c14]/80 backdrop-blur-xl" : "border-transparent bg-transparent")}>
         <a href="#top" className="flex items-center gap-2.5">
           <img src={asset("icon.png")} alt="" className="h-8 w-8 rounded-[9px]" />
-          <span className="text-[15px] font-semibold tracking-tight">NoBars</span>
+          <span className="text-[14px] font-normal">NoBars</span>
         </a>
         <div className="hidden items-center gap-1 md:flex">
           {links.map(([l, h]) => (

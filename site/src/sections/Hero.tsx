@@ -17,16 +17,12 @@ export function Hero() {
   }, { scope: root })
 
   return (
-    <section id="top" ref={root} className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 pb-16 pt-32 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:pt-40">
+    <section id="top" ref={root} className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 pb-12 pt-24 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
       <div>
-        <div className="hero-fade inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-[13px] text-white/65">
-          <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-60" /><span className="relative inline-flex h-2 w-2 rounded-full bg-accent" /></span>
-          Offline mesh for iPhone
-        </div>
         <SplitText
           text="Talk when there's no signal."
           tag="h1"
-          className="mt-6 text-[44px] font-semibold leading-[1.02] tracking-[-0.03em] text-white sm:text-[68px]"
+          className="mt-6 text-[48px] leading-[0.94] tracking-[-0.025em] text-white sm:text-[76px]"
           splitType="words"
           delay={70}
           duration={1}
@@ -39,7 +35,7 @@ export function Hero() {
           NoBars links iPhones over Bluetooth and peer-to-peer Wi-Fi into a mesh that passes messages from phone to phone.
           Chat, share live location, send SOS and call your crew with zero bars, no internet and no server.
         </p>
-        <div className="hero-fade mt-9 flex flex-wrap items-center gap-3">
+        <div className="hero-fade mt-7 flex flex-wrap items-center gap-3">
           <a href="#install" className="group flex items-center gap-2 rounded-full bg-accent px-5 py-3 text-[15px] font-medium text-white transition hover:bg-[#7548f5]">
             How to install <LuArrowDown className="h-4 w-4 transition group-hover:translate-y-0.5" />
           </a>

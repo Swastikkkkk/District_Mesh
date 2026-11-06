@@ -7,9 +7,15 @@
   --color-accent: #855aff;
   --color-accent-soft: #b49cff;
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Instrument Serif", serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 html { scroll-behavior: smooth; background: var(--color-bg); color-scheme: dark; }
 body { background: var(--color-bg); color: #f4f3f8; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2 { font-family: var(--font-display); font-weight: 400; }
+.screen-rail { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 0.2) transparent; }
+@media (min-width: 1024px) {
+  .screen-card { width: calc((100% - 72px) / 4); }
+}
 ::selection { background: rgb(133 90 255 / 0.4); }

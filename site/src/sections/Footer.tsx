@@ -7,7 +7,7 @@ export function Footer() {
         <div className="flex items-center gap-3">
           <img src={asset("icon.png")} alt="" className="h-9 w-9 rounded-[10px]" />
           <div>
-            <div className="text-[15px] font-semibold">NoBars</div>
+            <div className="text-[14px] font-normal">NoBars</div>
             <div className="text-[13px] text-white/45">Built by Swastik Dutt</div>
           </div>
         </div>

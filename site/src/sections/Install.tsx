@@ -64,7 +64,7 @@ export function Install() {
       </div>
       <div className="mt-6"><Steps steps={tab === "pc" ? noMac : mac} /></div>
 
-      <h3 className="reveal mt-16 text-[22px] font-semibold tracking-tight">Then, first run</h3>
+      <h3 className="reveal mt-12 text-[22px] font-semibold tracking-tight">Then, first run</h3>
       <div className="mt-6"><Steps steps={firstRun} /></div>
     </Section>
   )
